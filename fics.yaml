@@ -1,0 +1,9 @@
+
+# add fics by replacing these example urls
+# you can add as many as you'd like, but the program will take longer to run!
+# do NOT modify updated or chapter values unless you know what you"re doing - the program will probably break
+
+---
+fics:
+- url: https://archiveofourown.org/works/FIC_ID
+- url: https://archiveofourown.org/works/FIC_ID
