@@ -98,7 +98,7 @@ for i in track(urls, description="Fetching data from AO3..."):
 
     # Check if url has local tags: title, last updated, chapters
     if "title" and "updated" and "chapters" not in i:
-        table.add_row(web_tags[1], web_tags[0], web_tags[2])
+        table.add_row(web_tags[1], "[link=" + i["url"] + "]" + web_tags[0] + "[/link]", web_tags[2])
     else:
         # Compare each local chapter value to each web chapter value
         if int(web_tags[2].split("/")[0]) > int(i["chapters"].split("/")[0]):
@@ -106,7 +106,7 @@ for i in track(urls, description="Fetching data from AO3..."):
                           "[#ffcc33][bold][link=" + i["url"] + "]" + web_tags[0] + "[/link]",
                           "[#ffcc33][bold]" + web_tags[2])
         else:
-            table.add_row(web_tags[1], web_tags[0], web_tags[2])
+            table.add_row(web_tags[1], "[link=" + i["url"] + "]" + web_tags[0] + "[/link]", web_tags[2])
 
     # Update url information
     i["title"] = web_tags[0]
