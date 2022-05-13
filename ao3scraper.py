@@ -52,17 +52,18 @@ if not os.path.exists("fics.db"):
 @click.command()
 @click.option('--scrape', '-s', is_flag=True, help='Launches scraping mode.')
 @click.option('--list', '-l', is_flag=True, help='Lists all entries in the database.')
-@click.option('--add', '-a', is_flag=True, help='Opens a text file to add multiple urls to the database.')
-# @click.option('--add', '-a', help='Adds a single url to the database.')
-# @click.option('--add-urls', is_flag=True, help='Opens a text file to add multiple urls to the database.')
+@click.option('--add', '-a', help='Adds a single url to the database.')
+@click.option('--add-urls', is_flag=True, help='Opens a text file to add multiple urls to the database.')
 @click.option('--delete', '-d', help='Deletes an entry from the database.', type=int)
-def main(scrape, add, list, delete):
+def main(scrape, add, add_urls, list, delete):
     if scrape:
         scrape_urls()
     elif list:
         construct_rich_table()
     elif add:
-        add_urls()
+        add_url_single(add)
+    elif add_urls:
+        add_url_multiple()
     elif delete:
         delete_entry(delete)
     else:
@@ -170,7 +171,7 @@ def construct_rich_table():
     console.print(table)
 
 
-def add_urls():
+def add_url_multiple():
     message = click.edit(MARKER + '\n')
     if message is not None:
         message_lines = message.split(MARKER, 1)[1].rstrip('\n').lstrip('\n')
@@ -180,6 +181,14 @@ def add_urls():
             cursor.execute("INSERT INTO fics (url) VALUES ('" + str(i) + "');")
             connection.commit()
             print("Added " + url_to_parse[url_to_parse.index(i)])  # improve this logic
+
+    construct_rich_table()
+
+
+def add_url_single(entry):
+    cursor.execute("INSERT INTO fics (url) VALUES ('" + entry + "');")
+    connection.commit()
+    print("Added " + entry)
 
     construct_rich_table()
 
