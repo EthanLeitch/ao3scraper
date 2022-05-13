@@ -91,7 +91,6 @@ def scrape_urls():
         item_index = str(fic_table.index(item) + 1) + "."
 
         # Check if url has local tags: title, chapters, last updated
-        print(item)
         if None in item:
             table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
                           web_tags[2])

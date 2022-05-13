@@ -5,7 +5,7 @@
 .idea/
 
 # Ignore database files
-fics.db
-example.db
+*.db
 
+# Ignore TODO
 TODO.txt
