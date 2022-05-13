@@ -4,6 +4,6 @@
 # Ignore pycharm IDE files
 .idea/
 
-# Ignore fics.yaml
-fics.yaml
-fics.yml
+# Ignore fics.db
+fics.db
+example.db
