@@ -4,6 +4,8 @@
 # Ignore pycharm IDE files
 .idea/
 
-# Ignore fics.db
+# Ignore database files
 fics.db
 example.db
+
+TODO.txt
