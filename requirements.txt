@@ -1,4 +1,4 @@
-beautifulsoup4==4.10.0
-PyYAML==6.0
+beautifulsoup4==4.11.1
+click==8.0.1
 requests==2.25.1
-rich==11.2.0
+rich==12.4.1
