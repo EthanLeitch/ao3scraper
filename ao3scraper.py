@@ -21,6 +21,8 @@ TITLE_POS = 1
 CHAPTER_POS = 2
 LAST_UPDATED_POS = 3
 
+MARKER = "# Enter one url on each line to add it to the database. This line will not be recorded."
+
 # Create columns of rich table
 table = Table(title="Fanfics")
 
@@ -146,7 +148,7 @@ def construct_rich_table():
     for item in fic_table:
         """
             item_id = str(item[1])
-            item_id = item_id.split("archiveofourown.org/works/")[1] # Remove everything before and including this string
+            item_id = item_id.split("archiveofourown.org/works/")[1] # Remove everything before and including this str
             item_id = item_id.split("/", 1)[0] # Remove everything after and including this string
             """
 
@@ -154,7 +156,7 @@ def construct_rich_table():
         item_index = str(fic_table.index(item) + 1) + "."
 
         # Check if title field is empty
-        if item[TITLE_POS] == None:
+        if item[TITLE_POS] is None:
             table.add_row(item_index, "[link=" + item[URL_POS] + "]FIC DATA NOT YET SCRAPED[/link]", item[CHAPTER_POS],
                           item[LAST_UPDATED_POS])
         else:
@@ -169,7 +171,6 @@ def construct_rich_table():
 
 
 def add_urls():
-    MARKER = "# Enter one url on each line to add it to the database. This line will not be recorded."
     message = click.edit(MARKER + '\n')
     if message is not None:
         message_lines = message.split(MARKER, 1)[1].rstrip('\n').lstrip('\n')
