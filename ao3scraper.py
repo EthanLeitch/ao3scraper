@@ -26,9 +26,8 @@ table = Table(title="Fanfics")
 
 table.add_column("Index", justify="left", style="red", no_wrap=True)
 table.add_column("Title", style="magenta")
-table.add_column("Chapter",  style="green")
+table.add_column("Chapter", style="green")
 table.add_column("Last updated", justify="left", style="cyan", no_wrap=True)
-
 
 # Create database file if database does not exist
 if not os.path.exists("fics.db"):
@@ -39,21 +38,22 @@ if not os.path.exists("fics.db"):
 
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE fics (url TEXT, title TEXT, chapters TEXT, updated TEXT)")
-    
+
     connection.commit()
     connection.close()
 
     print("Database created.\n")
+    exit()
+
 
 # Start click command
 @click.command()
 @click.option('--scrape', '-s', is_flag=True, help='Launches scraping mode.')
 @click.option('--list', '-l', is_flag=True, help='Lists all entries in the database.')
 @click.option('--add', '-a', is_flag=True, help='Opens a text file to add multiple urls to the database.')
-#@click.option('--add', '-a', help='Adds a single url to the database.')
-#@click.option('--add-urls', is_flag=True, help='Opens a text file to add multiple urls to the database.')
+# @click.option('--add', '-a', help='Adds a single url to the database.')
+# @click.option('--add-urls', is_flag=True, help='Opens a text file to add multiple urls to the database.')
 @click.option('--delete', '-d', help='Deletes an entry from the database.', type=int)
-
 def main(scrape, add, list, delete):
     if scrape:
         scrape_urls()
@@ -67,10 +67,6 @@ def main(scrape, add, list, delete):
         with click.Context(main, info_name='ao3scraper.py') as ctx:
             click.echo(main.get_help(ctx))
 
-    #print()
-    #console = Console()
-    #console.print(table)
-            
     connection.close()
     exit()
 
@@ -95,28 +91,34 @@ def scrape_urls():
         item_index = str(fic_table.index(item) + 1) + "."
 
         # Check if url has local tags: title, chapters, last updated
-        if "title" and "chapters" and "updated" not in item:
-            table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0]+ "[/link]", web_tags[1], web_tags[2])
+        print(item)
+        if None in item:
+            table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
+                          web_tags[2])
         else:
-            # Compare each local chapter value to each web chapter value
+            # Compare each web chapter value to each local chapter value
             if int(web_tags[1].split("/")[0]) > int(item[CHAPTER_POS].split("/")[0]):
                 table.add_row("[#ffcc33][bold]" + item_index,
-                            "[#ffcc33][bold][link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
-                            "[#ffcc33][bold]" + web_tags[1],
-                            "[#ffcc33][bold]" + web_tags[2])
+                              "[#ffcc33][bold][link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
+                              "[#ffcc33][bold]" + web_tags[1],
+                              "[#ffcc33][bold]" + web_tags[2])
             else:
-                table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1], web_tags[2])
+                table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
+                              web_tags[2])
 
         # Write item information to database
         target_entry = fic_table[fic_table.index(item)]
-        #print("UPDATE fics SET title = '" + web_tags[0] + "', chapters = '" + web_tags[1] + "', updated = '" + web_tags[2] + "' WHERE url = '" + target_entry[URL_POS] + "';")
-        cursor.execute("UPDATE fics SET title = \"" + web_tags[0] + "\", chapters = \"" + web_tags[1] + "\", updated = \"" + web_tags[2] + "\" WHERE url = \"" + target_entry[URL_POS] + "\";")
+        # print("UPDATE fics SET title = '" + web_tags[0] + "', chapters = '" + web_tags[1] + "', updated = '" +
+        # web_tags[2] + "' WHERE url = '" + target_entry[URL_POS] + "';")
+        cursor.execute(
+            "UPDATE fics SET title = \"" + web_tags[0] + "\", chapters = \"" + web_tags[1] + "\", updated = \"" +
+            web_tags[2] + "\" WHERE url = \"" + target_entry[URL_POS] + "\";")
         connection.commit()
 
     # Print rich table
     print()
-    console = Console()
     console.print(table)
+
 
 # Function to fetch all online tags for one URL
 def get_tags(url, item):
@@ -124,7 +126,7 @@ def get_tags(url, item):
 
     # 4xx and 5xx Error Detection
     if not page.ok:
-        print(page.status_code, "Error!", style="red")
+        console.print(page.status_code, "Error!", style="red")
         print("URL responsible: ", item[URL_POS])
         pass
         # continue would work here? but not in a loop
@@ -132,9 +134,9 @@ def get_tags(url, item):
     soup = BeautifulSoup(page.content, "html.parser")
 
     # Return tags in order: title, chapters, last updated.
-    return[soup.find_all(class_="title heading")[0].string.strip(),
-           soup.find_all(class_="chapters")[1].string,
-           soup.find_all(class_="status")[1].string]
+    return [soup.find_all(class_="title heading")[0].string.strip(),
+            soup.find_all(class_="chapters")[1].string,
+            soup.find_all(class_="status")[1].string]
 
 
 def construct_rich_table():
@@ -143,25 +145,27 @@ def construct_rich_table():
     fic_table = cursor.fetchall()
 
     for item in fic_table:
-            """
+        """
             item_id = str(item[1])
             item_id = item_id.split("archiveofourown.org/works/")[1] # Remove everything before and including this string
             item_id = item_id.split("/", 1)[0] # Remove everything after and including this string
             """
 
-            # Get item index
-            item_index = str(fic_table.index(item) + 1) + "."
+        # Get item index
+        item_index = str(fic_table.index(item) + 1) + "."
 
-            # Check if title field is empty
-            if item[TITLE_POS] == None:
-                table.add_row(item_index, "[link=" + item[URL_POS] + "]FIC DATA NOT YET SCRAPED[/link]", item[CHAPTER_POS], item[LAST_UPDATED_POS])
-            else:
-                # table.add_row(str(fic_table.index(item) + 1) + ". [link=" + item[1] + "]" + item_id + "[/link]", item[0], item[2], item[3])
-                table.add_row(item_index, "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]", item[CHAPTER_POS], item[LAST_UPDATED_POS])
+        # Check if title field is empty
+        if item[TITLE_POS] == None:
+            table.add_row(item_index, "[link=" + item[URL_POS] + "]FIC DATA NOT YET SCRAPED[/link]", item[CHAPTER_POS],
+                          item[LAST_UPDATED_POS])
+        else:
+            # table.add_row(str(fic_table.index(item) + 1) + ". [link=" + item[1] + "]" + item_id + "[/link]",
+            # item[0], item[2], item[3])
+            table.add_row(item_index, "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]", item[CHAPTER_POS],
+                          item[LAST_UPDATED_POS])
 
     # Print rich table
     print()
-    console = Console()
     console.print(table)
 
 
@@ -171,20 +175,20 @@ def add_urls():
     if message is not None:
         message_lines = message.split(MARKER, 1)[1].rstrip('\n').lstrip('\n')
         url_to_parse = message_lines.split('\n')
-        
+
         for i in url_to_parse:
             cursor.execute("INSERT INTO fics (url) VALUES ('" + str(i) + "');")
             connection.commit()
-            print("Added " + url_to_parse[url_to_parse.index(i)]) # improve this logic
+            print("Added " + url_to_parse[url_to_parse.index(i)])  # improve this logic
 
     construct_rich_table()
 
 
 def delete_entry(entry):
     try:
-        target_entry = fic_table[(entry - 1)] # possible black magic, consider using rowid
+        target_entry = fic_table[(entry - 1)]  # possible black magic, consider using rowid
         cursor.execute("DELETE FROM fics WHERE url = '" + target_entry[URL_POS] + "';")
-        #cursor.execute("DELETE FROM fics WHERE rowid = " + entry + ";")
+        # cursor.execute("DELETE FROM fics WHERE rowid = " + entry + ";")
     except IndexError:
         print("Number out of index range.")
         exit()
@@ -202,5 +206,7 @@ if __name__ == "__main__":
     # Create table
     cursor.execute("SELECT * FROM fics")
     fic_table = cursor.fetchall()
+
+    console = Console()
 
     main()
