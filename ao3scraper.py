@@ -26,7 +26,7 @@ MARKER = "# Enter one url on each line to add it to the database. This line will
 # Create columns of rich table
 table = Table(title="Fanfics")
 
-table.add_column("Index", justify="left", style="red", no_wrap=True)
+table.add_column("Index", justify="left", style="#bcbcbc", no_wrap=True)
 table.add_column("Title", style="magenta")
 table.add_column("Chapter", style="green")
 table.add_column("Last updated", justify="left", style="cyan", no_wrap=True)
