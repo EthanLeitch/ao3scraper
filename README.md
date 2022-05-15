@@ -1,7 +1,7 @@
 # ao3scraper
-A python program that scrapes AO3 for fanfiction data, organises it in a table, and highlights entries when they are updated.
+A python program that scrapes AO3 for fanfiction data, stores it in a database, and highlights entries when they are updated.
 
-![Fanfics Table](https://i.ibb.co/bzK7zJQ/Screen-Shot-2022-02-17-at-7-18-47-AM.png)
+![Fanfics Table](https://i.ibb.co/hgS7BmW/fanfics-table.png)
 
 *Table with an updated entry highlighted.*
 
@@ -11,7 +11,13 @@ Install required packages with:
     pip install -r requirements.txt
 
 ## Usage
-Replace example urls in `fics.yaml` with custom ones.
-Then run the program:
+    Usage: python3 ao3scraper.py [OPTIONS]
 
-    python3 ao3scraper.py
+    Options:
+      -s, --scrape          Launches scraping mode.
+      -l, --list            Lists all entries in the database.
+      -a, --add TEXT        Adds a single url to the database.
+      --add-urls            Opens a text file to add multiple urls to the
+                            database.
+      -d, --delete INTEGER  Deletes an entry from the database.
+      --help                Show this message and exit.
