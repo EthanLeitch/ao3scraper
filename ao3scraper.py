@@ -177,18 +177,28 @@ def add_url_multiple():
         message_lines = message.split(MARKER, 1)[1].rstrip('\n').lstrip('\n')
         url_to_parse = message_lines.split('\n')
 
-        for i in url_to_parse:
-            cursor.execute("INSERT INTO fics (url) VALUES ('" + str(i) + "');")
+        for item in url_to_parse:
+            if str(fic_table).find(item) != -1:
+                print(item, "already in database.")
+                continue
+            cursor.execute("INSERT INTO fics (url) VALUES ('" + str(item) + "');")
             connection.commit()
-            print("Added " + url_to_parse[url_to_parse.index(i)])  # improve this logic
+            print("Added " + url_to_parse[url_to_parse.index(item)])  # improve this logic
 
     construct_rich_table()
 
 
 def add_url_single(entry):
-    cursor.execute("INSERT INTO fics (url) VALUES ('" + entry + "');")
-    connection.commit()
-    print("Added " + entry)
+    # print(fic_table)
+    # print(entry)
+    # print(entry in fic_table)
+    # if entry in fic_table
+    if str(fic_table).find(entry) != -1:
+        print(entry, "already in database.")
+    else:
+        cursor.execute("INSERT INTO fics (url) VALUES ('" + entry + "');")
+        connection.commit()
+        print("Added " + entry)
 
     construct_rich_table()
 
