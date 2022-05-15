@@ -93,6 +93,13 @@ def scrape_urls():
         # Get item index
         item_index = str(fic_table.index(item) + 1) + "."
 
+        # 4xx and 5xx error checking
+        if isinstance(web_tags, int):
+            table.add_row(item_index,
+                          "[link=" + item[URL_POS] + "]" + str(web_tags) + " ERROR WHEN FETCHING INFORMATION[/link]",
+                          item[CHAPTER_POS], item[LAST_UPDATED_POS], style="red")
+            continue
+
         # Check if url has local tags: title, chapters, last updated
         if None in item:
             table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
@@ -128,9 +135,12 @@ def get_tags(url, item):
 
     # 4xx and 5xx Error Detection
     if not page.ok:
-        console.print(page.status_code, "Error!", style="red")
-        print("URL responsible: ", item[URL_POS])
-        pass
+        """
+        console.print()
+        console.print(page.status_code, "Error!", style="red", highlight=False)
+        console.print("URL responsible:", item[URL_POS], style="red")
+        """
+        return page.status_code
         # continue would work here? but not in a loop
 
     soup = BeautifulSoup(page.content, "html.parser")
@@ -148,10 +158,10 @@ def construct_rich_table():
 
     for item in fic_table:
         """
-            item_id = str(item[1])
-            item_id = item_id.split("archiveofourown.org/works/")[1] # Remove everything before and including this str
-            item_id = item_id.split("/", 1)[0] # Remove everything after and including this string
-            """
+        item_id = str(item[1])
+        item_id = item_id.split("archiveofourown.org/works/")[1] # Remove everything before and including this str
+        item_id = item_id.split("/", 1)[0] # Remove everything after and including this string
+        """
 
         # Get item index
         item_index = str(fic_table.index(item) + 1) + "."
