@@ -1,5 +1,5 @@
 # ao3scraper
-A python program that scrapes AO3 for fanfiction data, stores it in a database, and highlights entries when they are updated.
+A python webscraper that scrapes AO3 for fanfiction data, stores it in a database, and highlights entries when they are updated.
 
 ![Fanfics Table](https://i.ibb.co/hgS7BmW/fanfics-table.png)
 
