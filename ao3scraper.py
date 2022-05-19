@@ -116,9 +116,9 @@ def scrape_urls():
                               web_tags[2])
 
         # Write item information to database
+        # here be black magic and code arcane
         target_entry = fic_table[fic_table.index(item)]
-        # print("UPDATE fics SET title = '" + web_tags[0] + "', chapters = '" + web_tags[1] + "', updated = '" +
-        # web_tags[2] + "' WHERE url = '" + target_entry[URL_POS] + "';")
+
         cursor.execute(
             "UPDATE fics SET title = \"" + web_tags[0] + "\", chapters = \"" + web_tags[1] + "\", updated = \"" +
             web_tags[2] + "\" WHERE url = \"" + target_entry[URL_POS] + "\";")
@@ -199,10 +199,6 @@ def add_url_multiple():
 
 
 def add_url_single(entry):
-    # print(fic_table)
-    # print(entry)
-    # print(entry in fic_table)
-    # if entry in fic_table
     if str(fic_table).find(entry) != -1:
         print(entry, "already in database.")
     else:
@@ -215,7 +211,8 @@ def add_url_single(entry):
 
 def delete_entry(entry):
     try:
-        target_entry = fic_table[(entry - 1)]  # possible black magic, consider using rowid
+        # here be black magic and code arcane
+        target_entry = fic_table[(entry - 1)]   
         cursor.execute("DELETE FROM fics WHERE url = '" + target_entry[URL_POS] + "';")
         # cursor.execute("DELETE FROM fics WHERE rowid = " + entry + ";")
     except IndexError:
