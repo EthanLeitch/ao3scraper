@@ -93,7 +93,7 @@ def scrape_urls():
         # Get item index
         item_index = str(fic_table.index(item) + 1) + "."
 
-        # 4xx and 5xx error checking
+        # 4xx and 5xx error checking - checks whether webtags returns an int. This should be changed to something better, perhaps by throwing an exception.
         if isinstance(web_tags, int):
             table.add_row(item_index,
                           "[link=" + item[URL_POS] + "]" + str(web_tags) + " ERROR WHEN FETCHING INFORMATION[/link]",
