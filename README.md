@@ -21,3 +21,6 @@ Install required packages with:
                             database.
       -d, --delete INTEGER  Deletes an entry from the database.
       --help                Show this message and exit.
+
+## Contributing
+Contributions are always appreciated. Submit a pull request with your suggested changes!
