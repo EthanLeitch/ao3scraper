@@ -154,18 +154,18 @@ def scrape_urls():
         else:
             # Compare each web chapter value to each local chapter value
             if int(web_tags[1].split("/")[0]) > int(item[CHAPTER_POS].split("/")[0]):
-                table.add_row("[#ffcc33][bold]" + item_index,
-                              "[#ffcc33][bold][link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
-                              "[#ffcc33][bold]" + web_tags[1],
-                              "[#ffcc33][bold]" + web_tags[2])
+                table.add_row(item_index,
+                              "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
+                              web_tags[1],
+                              web_tags[2], style="bold #ffcc33")
             else:
                 if HIGHLIGHT_STALE_FICS:
                     then = datetime.strptime(web_tags[2], DATE_FORMAT)
                     if (NOW - then).days > STALE_THRESHOLD:
-                        table.add_row("[#EE3598][bold]" + item_index,
-                                      "[#EE3598][bold][link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
-                                      "[#EE3598][bold]" + web_tags[1],
-                                      "[#EE3598][bold]" + web_tags[2])
+                        table.add_row(item_index,
+                                      "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
+                                      web_tags[1],
+                                      web_tags[2], style="bold #EE3598")
                     else:
                         table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
                                       web_tags[2])
@@ -226,10 +226,10 @@ def construct_rich_table():
             if HIGHLIGHT_STALE_FICS:
                 then = datetime.strptime(item[LAST_UPDATED_POS], DATE_FORMAT)
                 if (NOW - then).days > STALE_THRESHOLD:
-                    table.add_row("[#EE3598][bold]" + item_index,
-                                  "[#EE3598][bold][link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]",
-                                  "[#EE3598][bold]" + item[CHAPTER_POS],
-                                  "[#EE3598][bold]" + item[LAST_UPDATED_POS])
+                    table.add_row(item_index,
+                                  "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]",
+                                  item[CHAPTER_POS],
+                                  item[LAST_UPDATED_POS], style="bold #EE3598")
                     continue
             table.add_row(item_index, "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]", item[CHAPTER_POS],
                           item[LAST_UPDATED_POS])
