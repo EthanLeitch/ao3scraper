@@ -1,5 +1,5 @@
 ---
 
 #date_format: "%x" # uses python strftime date format options
-highlight_stale_fics: no
-stale_threshold: 6 # measured in weeks
+highlight_stale_fics: yes
+stale_threshold: 60 # measured in days

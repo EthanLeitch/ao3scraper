@@ -4,9 +4,12 @@ import requests
 from requests.exceptions import Timeout
 from bs4 import BeautifulSoup
 
-# Sqlite handling and validation 
+# Sqlite, yaml handling and validation 
+import yaml
 import sqlite3
 import os.path
+
+from datetime import datetime
 
 # Formatting
 from rich.console import Console
@@ -14,6 +17,16 @@ from rich.table import Table
 from rich.progress import track
 
 import click
+
+CONFIG_TEMPLATE = """---
+
+#date_format: "%x" # uses python strftime date format options
+highlight_stale_fics: no
+stale_threshold: 6 # measured in weeks
+"""
+
+DATE_FORMAT = "%Y-%m-%d"
+NOW = datetime.now()
 
 # Setup fic_array item constants
 URL_POS = 0
@@ -23,13 +36,29 @@ LAST_UPDATED_POS = 3
 
 MARKER = "# Enter one url on each line to add it to the database. This line will not be recorded."
 
-# Create columns of rich table
-table = Table(title="Fanfics")
+# Create config file if config file does not exist
+if not os.path.exists("config.yaml"):
+    print("No config file found. Creating new config file...")
 
-table.add_column("Index", justify="left", style="#bcbcbc", no_wrap=True)
-table.add_column("Title", style="magenta")
-table.add_column("Chapter", style="green")
-table.add_column("Last updated", justify="left", style="cyan", no_wrap=True)
+    # Create yaml file if yaml file does not exist
+    yaml_file = open("config.yaml", "w")
+    yaml_file.write(CONFIG_TEMPLATE)
+    yaml_file.close()
+
+    print("Config file created.")
+    print("You can change configuration options in config.yaml")
+else:
+    # Fetch all local chapter values of URLS
+    with open("config.yaml", "r") as file:
+        config_file = yaml.safe_load(file)
+    try:
+        # Load config preferences into variables
+        HIGHLIGHT_STALE_FICS = config_file["highlight_stale_fics"]
+        STALE_THRESHOLD = 60
+    except TypeError:
+        print("Error loading config file.")
+        exit()
+    file.close()
 
 # Create database file if database does not exist
 if not os.path.exists("fics.db"):
@@ -46,6 +75,24 @@ if not os.path.exists("fics.db"):
 
     print("Database created.\n")
     exit()
+
+# Create columns of rich table
+table = Table(title="Fanfics")
+
+table.add_column("Index", justify="left", style="#bcbcbc", no_wrap=True)
+table.add_column("Title", style="magenta")
+table.add_column("Chapter", style="green")
+table.add_column("Last updated", justify="left", style="cyan", no_wrap=True)
+
+# Connect to database
+connection = sqlite3.connect("fics.db")
+cursor = connection.cursor()
+
+# Load table
+cursor.execute("SELECT * FROM fics")
+fic_table = cursor.fetchall()
+
+console = Console()
 
 
 # Start click command
@@ -112,8 +159,19 @@ def scrape_urls():
                               "[#ffcc33][bold]" + web_tags[1],
                               "[#ffcc33][bold]" + web_tags[2])
             else:
-                table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
-                              web_tags[2])
+                if HIGHLIGHT_STALE_FICS:
+                    then = datetime.strptime(web_tags[2], DATE_FORMAT)
+                    if (NOW - then).days > STALE_THRESHOLD:
+                        table.add_row("[#EE3598][bold]" + item_index,
+                                      "[#EE3598][bold][link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
+                                      "[#EE3598][bold]" + web_tags[1],
+                                      "[#EE3598][bold]" + web_tags[2])
+                    else:
+                        table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
+                                      web_tags[2])
+                else:
+                    table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
+                                  web_tags[2])
 
         # Write item information to database
         # here be black magic and code arcane
@@ -165,6 +223,14 @@ def construct_rich_table():
             table.add_row(item_index, "[link=" + item[URL_POS] + "]FIC DATA NOT YET SCRAPED[/link]", item[CHAPTER_POS],
                           item[LAST_UPDATED_POS])
         else:
+            if HIGHLIGHT_STALE_FICS:
+                then = datetime.strptime(item[LAST_UPDATED_POS], DATE_FORMAT)
+                if (NOW - then).days > STALE_THRESHOLD:
+                    table.add_row("[#EE3598][bold]" + item_index,
+                                  "[#EE3598][bold][link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]",
+                                  "[#EE3598][bold]" + item[CHAPTER_POS],
+                                  "[#EE3598][bold]" + item[LAST_UPDATED_POS])
+                    continue
             table.add_row(item_index, "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]", item[CHAPTER_POS],
                           item[LAST_UPDATED_POS])
 
@@ -204,7 +270,7 @@ def add_url_single(entry):
 def delete_entry(entry):
     try:
         # here be black magic and code arcane
-        target_entry = fic_table[(entry - 1)]   
+        target_entry = fic_table[(entry - 1)]
         cursor.execute("DELETE FROM fics WHERE url = '" + target_entry[URL_POS] + "';")
         # cursor.execute("DELETE FROM fics WHERE rowid = " + entry + ";")
     except IndexError:
@@ -217,14 +283,4 @@ def delete_entry(entry):
 
 
 if __name__ == "__main__":
-    # Connect to database
-    connection = sqlite3.connect("fics.db")
-    cursor = connection.cursor()
-
-    # Create table
-    cursor.execute("SELECT * FROM fics")
-    fic_table = cursor.fetchall()
-
-    console = Console()
-
     main()
