@@ -4,6 +4,9 @@
 # Ignore pycharm IDE files
 .idea/
 
+# Ignore venv
+venv/
+
 # Ignore database files
 *.db
 
