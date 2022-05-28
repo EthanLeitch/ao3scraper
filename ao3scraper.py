@@ -21,7 +21,7 @@ import click
 CONFIG_TEMPLATE = """---
 
 highlight_stale_fics: no
-stale_threshold: 6 # measured in weeks
+stale_threshold: 60 # measured in days
 """
 
 DATE_FORMAT = "%Y-%m-%d"
