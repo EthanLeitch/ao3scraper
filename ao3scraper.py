@@ -165,7 +165,7 @@ def scrape_urls():
                         table.add_row(item_index,
                                       "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
                                       web_tags[1],
-                                      web_tags[2], style="bold #EE3598")
+                                      web_tags[2], style="bold deep_sky_blue4")
                     else:
                         table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
                                       web_tags[2])
@@ -229,7 +229,7 @@ def construct_rich_table():
                     table.add_row(item_index,
                                   "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]",
                                   item[CHAPTER_POS],
-                                  item[LAST_UPDATED_POS], style="bold #EE3598")
+                                  item[LAST_UPDATED_POS], style="bold deep_sky_blue4")
                     continue
             table.add_row(item_index, "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]", item[CHAPTER_POS],
                           item[LAST_UPDATED_POS])
