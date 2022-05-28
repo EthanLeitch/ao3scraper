@@ -20,7 +20,6 @@ import click
 
 CONFIG_TEMPLATE = """---
 
-#date_format: "%x" # uses python strftime date format options
 highlight_stale_fics: no
 stale_threshold: 6 # measured in weeks
 """
