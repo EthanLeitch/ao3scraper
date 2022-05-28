@@ -248,7 +248,7 @@ def add_url_multiple():
             if str(fic_table).find(item) != -1:
                 print(item, "already in database.")
                 continue
-            cursor.execute("INSERT INTO fics (url) VALUES ('" + str(item) + "');")
+            cursor.execute(f"INSERT INTO fics (url) VALUES ('{str(item)}');")
             connection.commit()
             print("Added " + url_to_parse[url_to_parse.index(item)])  # improve this logic
 
@@ -259,7 +259,7 @@ def add_url_single(entry):
     if str(fic_table).find(entry) != -1:
         print(entry, "already in database.")
     else:
-        cursor.execute("INSERT INTO fics (url) VALUES ('" + entry + "');")
+        cursor.execute(f"INSERT INTO fics (url) VALUES ('{entry}');")
         connection.commit()
         print("Added " + entry)
 
@@ -270,7 +270,7 @@ def delete_entry(entry):
     try:
         # here be black magic and code arcane
         target_entry = fic_table[(entry - 1)]
-        cursor.execute("DELETE FROM fics WHERE url = '" + target_entry[URL_POS] + "';")
+        cursor.execute(f"DELETE FROM fics WHERE url = '{target_entry[URL_POS]}';")
         # cursor.execute("DELETE FROM fics WHERE rowid = " + entry + ";")
     except IndexError:
         print("Number out of index range.")
