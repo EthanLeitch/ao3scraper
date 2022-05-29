@@ -134,7 +134,7 @@ def scrape_urls():
     # Handle each url
     for item in track(fic_table, description="Fetching data from AO3..."):
         # Fetch all external chapter values of URLS
-        web_tags = get_tags(item[URL_POS], item)
+        web_tags = get_tags(item[URL_POS])
 
         # Get item index
         item_index = str(fic_table.index(item) + 1) + "."
@@ -173,12 +173,10 @@ def scrape_urls():
                                   web_tags[2])
 
         # Write item information to database
-        # here be black magic and code arcane
         target_entry = fic_table[fic_table.index(item)]
 
-        cursor.execute(
-            "UPDATE fics SET title = \"" + web_tags[0] + "\", chapters = \"" + web_tags[1] + "\", updated = \"" +
-            web_tags[2] + "\" WHERE url = \"" + target_entry[URL_POS] + "\";")
+        # Must be triple-quotations in case fic title has quotation marks which will mess up the SQL statement
+        cursor.execute(f"""UPDATE fics SET title = "{web_tags[0]}", chapters = "{web_tags[1]}", updated = "{web_tags[2]}" WHERE url = "{target_entry[URL_POS]}";""")
         connection.commit()
 
     # Print rich table
@@ -187,7 +185,7 @@ def scrape_urls():
 
 
 # Function to fetch all online tags for one URL
-def get_tags(url, item):
+def get_tags(url):
     page = requests.get(url)
 
     # 4xx and 5xx Error Detection
@@ -261,7 +259,7 @@ def add_url_single(entry):
     else:
         cursor.execute(f"INSERT INTO fics (url) VALUES ('{entry}');")
         connection.commit()
-        print("Added " + entry)
+        print("Added", entry)
 
     construct_rich_table()
 
@@ -276,7 +274,7 @@ def delete_entry(entry):
         print("Number out of index range.")
         exit()
     connection.commit()
-    print("Deleted entry number " + str(entry))
+    print("Deleted entry number", str(entry))
 
     construct_rich_table()
 
