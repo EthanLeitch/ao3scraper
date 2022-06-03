@@ -15,6 +15,7 @@ from datetime import datetime
 from rich.console import Console
 from rich.table import Table
 from rich.progress import track
+from rich.style import Style
 
 import click
 
@@ -35,6 +36,10 @@ LAST_UPDATED_POS = 3
 
 MARKER = "# Enter one url on each line to add it to the database. This line will not be recorded."
 
+stale_style = Style(color="deep_sky_blue4", bold=True)
+updated_style = Style(color="#ffcc33", bold=True)
+
+
 # Create config file if config file does not exist
 if not os.path.exists("config.yaml"):
     print("No config file found. Creating new config file...")
@@ -53,7 +58,7 @@ else:
     try:
         # Load config preferences into variables
         HIGHLIGHT_STALE_FICS = config_file["highlight_stale_fics"]
-        STALE_THRESHOLD = 60
+        STALE_THRESHOLD = config_file["stale_threshold"]
     except TypeError:
         print("Error loading config file.")
         exit()
@@ -131,49 +136,39 @@ def scrape_urls():
     else:
         print("Contacted servers successfully.")
 
-    # Handle each url
-    for item in track(fic_table, description="Fetching data from AO3..."):
+    # Handle each url - Replace with enum
+    for count, item in enumerate(track(fic_table, description="Fetching data from AO3...")):
         # Fetch all external chapter values of URLS
         web_tags = get_tags(item[URL_POS])
 
         # Get item index
-        item_index = str(fic_table.index(item) + 1) + "."
+        item_index = count + 1
 
         # 4xx and 5xx error checking - checks whether get_items returns an int. If so, it's a 5xx or 4xx error.
         if isinstance(web_tags, int):
-            table.add_row(item_index,
-                          "[link=" + item[URL_POS] + "]" + str(web_tags) + " ERROR WHEN FETCHING INFORMATION[/link]",
-                          item[CHAPTER_POS], item[LAST_UPDATED_POS], style="red")
+            add_row(item_index, item[URL_POS], f"{web_tags} ERROR WHEN FETCHING INFORMATION",
+                    item[CHAPTER_POS], item[LAST_UPDATED_POS], "red")
             continue
 
         # Check if url has local tags: title, chapters, last updated
         if None in item:
-            table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
-                          web_tags[2])
+            add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2])
         else:
             # Compare each web chapter value to each local chapter value
             if int(web_tags[1].split("/")[0]) > int(item[CHAPTER_POS].split("/")[0]):
-                table.add_row(item_index,
-                              "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
-                              web_tags[1],
-                              web_tags[2], style="bold #ffcc33")
+                add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2], updated_style)
             else:
                 if HIGHLIGHT_STALE_FICS:
                     then = datetime.strptime(web_tags[2], DATE_FORMAT)
                     if (NOW - then).days > STALE_THRESHOLD:
-                        table.add_row(item_index,
-                                      "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]",
-                                      web_tags[1],
-                                      web_tags[2], style="bold deep_sky_blue4")
+                        add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2], stale_style)
                     else:
-                        table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
-                                      web_tags[2])
+                        add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2])
                 else:
-                    table.add_row(item_index, "[link=" + item[URL_POS] + "]" + web_tags[0] + "[/link]", web_tags[1],
-                                  web_tags[2])
+                    add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2])
 
         # Write item information to database
-        target_entry = fic_table[fic_table.index(item)]
+        target_entry = fic_table[count]
 
         # Must be triple-quotations in case fic title has quotation marks which will mess up the SQL statement
         cursor.execute(f"""UPDATE fics SET title = "{web_tags[0]}", chapters = "{web_tags[1]}", updated = "{web_tags[2]}" WHERE url = "{target_entry[URL_POS]}";""")
@@ -205,31 +200,20 @@ def construct_rich_table():
     cursor.execute("SELECT * FROM fics")
     fic_table = cursor.fetchall()
 
-    for item in fic_table:
-        """
-        item_id = str(item[1])
-        item_id = item_id.split("archiveofourown.org/works/")[1] # Remove everything before and including this string
-        item_id = item_id.split("/", 1)[0] # Remove everything after and including this string
-        """
-
+    for count, item in enumerate(fic_table):
         # Get item index
-        item_index = str(fic_table.index(item) + 1) + "."
+        item_index = str(count + 1)
 
         # Check if title field is empty
         if item[TITLE_POS] is None:
-            table.add_row(item_index, "[link=" + item[URL_POS] + "]FIC DATA NOT YET SCRAPED[/link]", item[CHAPTER_POS],
-                          item[LAST_UPDATED_POS])
+            add_row(item_index, item[URL_POS], "FIC DATA NOT YET SCRAPED", item[CHAPTER_POS], item[LAST_UPDATED_POS])
         else:
             if HIGHLIGHT_STALE_FICS:
                 then = datetime.strptime(item[LAST_UPDATED_POS], DATE_FORMAT)
                 if (NOW - then).days > STALE_THRESHOLD:
-                    table.add_row(item_index,
-                                  "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]",
-                                  item[CHAPTER_POS],
-                                  item[LAST_UPDATED_POS], style="bold deep_sky_blue4")
+                    add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS], stale_style)
                     continue
-            table.add_row(item_index, "[link=" + item[URL_POS] + "]" + item[TITLE_POS] + "[/link]", item[CHAPTER_POS],
-                          item[LAST_UPDATED_POS])
+            add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS])
 
     # Print rich table
     print()
@@ -240,15 +224,15 @@ def add_url_multiple():
     message = click.edit(MARKER + '\n')
     if message is not None:
         message_lines = message.split(MARKER, 1)[1].rstrip('\n').lstrip('\n')
-        url_to_parse = message_lines.split('\n')
+        urls_to_parse = message_lines.split('\n')
 
-        for item in url_to_parse:
+        for count, item in enumerate(urls_to_parse):
             if str(fic_table).find(item) != -1:
                 print(item, "already in database.")
                 continue
             cursor.execute(f"INSERT INTO fics (url) VALUES ('{str(item)}');")
             connection.commit()
-            print("Added " + url_to_parse[url_to_parse.index(item)])  # improve this logic
+            print("Added " + urls_to_parse[count])
 
     construct_rich_table()
 
@@ -277,6 +261,9 @@ def delete_entry(entry):
     print("Deleted entry number", str(entry))
 
     construct_rich_table()
+
+def add_row(index, url, title, chapter, last_updated, styling=""):
+    table.add_row(f"{index}.", f"[link={url}]{title}[/link]", chapter, last_updated, style=styling)
 
 
 if __name__ == "__main__":
