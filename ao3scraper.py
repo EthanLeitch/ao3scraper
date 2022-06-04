@@ -39,7 +39,6 @@ MARKER = "# Enter one url on each line to add it to the database. This line will
 stale_style = Style(color="deep_sky_blue4", bold=True)
 updated_style = Style(color="#ffcc33", bold=True)
 
-
 # Create config file if config file does not exist
 if not os.path.exists("config.yaml"):
     print("No config file found. Creating new config file...")
@@ -136,7 +135,7 @@ def scrape_urls():
     else:
         print("Contacted servers successfully.")
 
-    # Handle each url - Replace with enum
+    # Handle each url
     for count, item in enumerate(track(fic_table, description="Fetching data from AO3...")):
         # Fetch all external chapter values of URLS
         web_tags = get_tags(item[URL_POS])
@@ -158,12 +157,10 @@ def scrape_urls():
             if int(web_tags[1].split("/")[0]) > int(item[CHAPTER_POS].split("/")[0]):
                 add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2], updated_style)
             else:
-                if HIGHLIGHT_STALE_FICS:
-                    then = datetime.strptime(web_tags[2], DATE_FORMAT)
-                    if (NOW - then).days > STALE_THRESHOLD:
-                        add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2], stale_style)
-                    else:
-                        add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2])
+                # Turn upload date of fic into correct format 
+                then = datetime.strptime(web_tags[2], DATE_FORMAT)
+                if HIGHLIGHT_STALE_FICS and (NOW - then).days > STALE_THRESHOLD:
+                    add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2], stale_style)
                 else:
                     add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2])
 
@@ -173,47 +170,6 @@ def scrape_urls():
         # Must be triple-quotations in case fic title has quotation marks which will mess up the SQL statement
         cursor.execute(f"""UPDATE fics SET title = "{web_tags[0]}", chapters = "{web_tags[1]}", updated = "{web_tags[2]}" WHERE url = "{target_entry[URL_POS]}";""")
         connection.commit()
-
-    # Print rich table
-    print()
-    console.print(table)
-
-
-# Function to fetch all online tags for one URL
-def get_tags(url):
-    page = requests.get(url)
-
-    # 4xx and 5xx Error Detection
-    if not page.ok:
-        return page.status_code
-
-    soup = BeautifulSoup(page.content, "html.parser")
-
-    # Return tags in order: title, chapters, last updated.
-    return [soup.find_all(class_="title heading")[0].string.strip(),
-            soup.find_all(class_="chapters")[1].string,
-            soup.find_all(class_="status")[1].string]
-
-
-def construct_rich_table():
-    # Refresh table entries
-    cursor.execute("SELECT * FROM fics")
-    fic_table = cursor.fetchall()
-
-    for count, item in enumerate(fic_table):
-        # Get item index
-        item_index = str(count + 1)
-
-        # Check if title field is empty
-        if item[TITLE_POS] is None:
-            add_row(item_index, item[URL_POS], "FIC DATA NOT YET SCRAPED", item[CHAPTER_POS], item[LAST_UPDATED_POS])
-        else:
-            if HIGHLIGHT_STALE_FICS:
-                then = datetime.strptime(item[LAST_UPDATED_POS], DATE_FORMAT)
-                if (NOW - then).days > STALE_THRESHOLD:
-                    add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS], stale_style)
-                    continue
-            add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS])
 
     # Print rich table
     print()
@@ -261,6 +217,48 @@ def delete_entry(entry):
     print("Deleted entry number", str(entry))
 
     construct_rich_table()
+
+
+# Function to fetch all online tags for one URL
+def get_tags(url):
+    page = requests.get(url)
+
+    # 4xx and 5xx Error Detection
+    if not page.ok:
+        return page.status_code
+
+    soup = BeautifulSoup(page.content, "html.parser")
+
+    # Return tags in order: title, chapters, last updated.
+    return [soup.find_all(class_="title heading")[0].string.strip(),
+            soup.find_all(class_="chapters")[1].string,
+            soup.find_all(class_="status")[1].string]
+
+
+def construct_rich_table():
+    # Refresh table entries
+    cursor.execute("SELECT * FROM fics")
+    fic_table = cursor.fetchall()
+
+    for count, item in enumerate(fic_table):
+        # Get item index
+        item_index = str(count + 1)
+
+        # Check if title field is empty
+        if item[TITLE_POS] is None:
+            add_row(item_index, item[URL_POS], "FIC DATA NOT YET SCRAPED", item[CHAPTER_POS], item[LAST_UPDATED_POS])
+        else:
+            # Turn upload date of fic into correct format 
+            then = datetime.strptime(item[LAST_UPDATED_POS], DATE_FORMAT)
+            if HIGHLIGHT_STALE_FICS and (NOW - then).days > STALE_THRESHOLD:
+                add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS], stale_style)
+            else:
+                add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS])
+
+    # Print rich table
+    print()
+    console.print(table)
+
 
 def add_row(index, url, title, chapter, last_updated, styling=""):
     table.add_row(f"{index}.", f"[link={url}]{title}[/link]", chapter, last_updated, style=styling)
