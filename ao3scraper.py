@@ -151,24 +151,24 @@ def scrape_urls():
 
         # Check if url has local tags: title, chapters, last updated
         if None in item:
-            add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2])
+            add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"])
         else:
             # Compare each web chapter value to each local chapter value
-            if int(web_tags[1].split("/")[0]) > int(item[CHAPTER_POS].split("/")[0]):
-                add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2], updated_style)
+            if int(web_tags["chapters"].split("/")[0]) > int(item[CHAPTER_POS].split("/")[0]):
+                add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"], updated_style)
             else:
                 # Turn upload date of fic into correct format 
-                then = datetime.strptime(web_tags[2], DATE_FORMAT)
+                then = datetime.strptime(web_tags["last updated"], DATE_FORMAT)
                 if HIGHLIGHT_STALE_FICS and (NOW - then).days > STALE_THRESHOLD:
-                    add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2], stale_style)
+                    add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"], stale_style)
                 else:
-                    add_row(item_index, item[URL_POS], web_tags[0], web_tags[1], web_tags[2])
+                    add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"])
 
         # Write item information to database
         target_entry = fic_table[count]
 
         # Must be triple-quotations in case fic title has quotation marks which will mess up the SQL statement
-        cursor.execute(f"""UPDATE fics SET title = "{web_tags[0]}", chapters = "{web_tags[1]}", updated = "{web_tags[2]}" WHERE url = "{target_entry[URL_POS]}";""")
+        cursor.execute(f"""UPDATE fics SET title = "{web_tags["title"]}", chapters = "{web_tags["chapters"]}", updated = "{web_tags["last updated"]}" WHERE url = "{target_entry[URL_POS]}";""")
         connection.commit()
 
     # Print rich table
@@ -230,9 +230,11 @@ def get_tags(url):
     soup = BeautifulSoup(page.content, "html.parser")
 
     # Return tags in order: title, chapters, last updated.
-    return [soup.find_all(class_="title heading")[0].string.strip(),
-            soup.find_all(class_="chapters")[1].string,
-            soup.find_all(class_="status")[1].string]
+    return {
+        "title": soup.find_all(class_="title heading")[0].string.strip(),
+        "chapters": soup.find_all(class_="chapters")[1].string,
+        "last updated": soup.find_all(class_="status")[1].string
+    }
 
 
 def construct_rich_table():
