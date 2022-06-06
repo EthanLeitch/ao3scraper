@@ -154,8 +154,11 @@ def scrape_urls():
             add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"])
         else:
             # Compare each web chapter value to each local chapter value
-            if int(web_tags["chapters"].split("/")[0]) > int(item[CHAPTER_POS].split("/")[0]):
-                add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"], updated_style)
+            web_chapter = int(web_tags["chapters"].split("/")[0])
+            local_chapter = int(item[CHAPTER_POS].split("/")[0])
+
+            if web_chapter > local_chapter:
+                add_row(item_index, item[URL_POS], web_tags["title"], f"""{web_tags["chapters"]} (+{web_chapter - local_chapter})""", web_tags["last updated"], updated_style)
             else:
                 # Turn upload date of fic into correct format 
                 then = datetime.strptime(web_tags["last updated"], DATE_FORMAT)
