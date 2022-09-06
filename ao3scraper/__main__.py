@@ -1,18 +1,9 @@
+# The main program for ao3scraper.
+
 # Web scraping
-# from multiprocessing import connection
 import requests
 from requests.exceptions import Timeout
 from bs4 import BeautifulSoup
-
-# Sqlite, yaml handling and validation 
-import yaml
-import sqlite3
-
-from os import path
-import pathlib
-from platformdirs import *
-
-from datetime import datetime
 
 # Formatting
 from rich.console import Console
@@ -20,26 +11,13 @@ from rich.table import Table
 from rich.progress import track
 from rich.style import Style
 
+# Other modules
+import sqlite3
 import click
+from datetime import datetime
 
-APP_NAME = "ao3scraper"
-APP_AUTHOR = "EthanLeitch"
-
-DATABASE_PATH = path.join(user_data_dir(APP_NAME, APP_AUTHOR)) + "/"
-CONFIG_PATH = path.join(user_config_dir(APP_NAME, APP_AUTHOR)) + "/"
-
-DATABASE_FILE_PATH = DATABASE_PATH + "fics.db"
-CONFIG_FILE_PATH = CONFIG_PATH + "config.yaml"
-
-
-CONFIG_TEMPLATE = """---
-
-highlight_stale_fics: no
-stale_threshold: 60 # measured in days
-"""
-
-DATE_FORMAT = "%Y-%m-%d"
-NOW = datetime.now()
+# Custom modules
+import constants
 
 # Setup fic_array item constants
 URL_POS = 0
@@ -47,70 +25,19 @@ TITLE_POS = 1
 CHAPTER_POS = 2
 LAST_UPDATED_POS = 3
 
-MARKER = "# Enter one url on each line to add it to the database. This line will not be recorded."
-
+# Setup rich styles
 stale_style = Style(color="deep_sky_blue4", bold=True)
 updated_style = Style(color="#ffcc33", bold=True)
 
-# Create config file if config file does not exist
-if not path.exists(CONFIG_FILE_PATH):
-    print("No config file found. Creating new config file...")
-
-    # Create yaml file if yaml file does not exist
-    pathlib.Path(CONFIG_PATH).mkdir(parents=True, exist_ok=True)
-    
-    with open(CONFIG_FILE_PATH, 'w') as file:
-        file.write(CONFIG_TEMPLATE)
-        pass
-    #yaml_file = open(CONFIG_PATH, "w")
-    #yaml_file.write(CONFIG_TEMPLATE)
-    #yaml_file.close()
-
-    print("Config file created.")
-    print("You can change configuration options in config.yaml")
-else:
-    # Fetch all local chapter values of URLS
-    with open(CONFIG_FILE_PATH, "r") as file:
-        config_file = yaml.safe_load(file)
-    try:
-        # Load config preferences into variables
-        HIGHLIGHT_STALE_FICS = config_file["highlight_stale_fics"]
-        STALE_THRESHOLD = config_file["stale_threshold"]
-    except TypeError:
-        print("Error loading config file.")
-        exit()
-    file.close()
-
-# Create database file if database does not exist
-if not path.exists(DATABASE_FILE_PATH):
-    print("No database found. Creating new database...")
-
-    pathlib.Path(DATABASE_PATH).mkdir(parents=True, exist_ok=True)
-
-    print(DATABASE_FILE_PATH)
-
-    # Connect to database
-    connection = sqlite3.connect(DATABASE_FILE_PATH)
-
-    cursor = connection.cursor()
-    cursor.execute("CREATE TABLE fics (url TEXT, title TEXT, chapters TEXT, updated TEXT)")
-
-    connection.commit()
-    connection.close()
-
-    print("Database created.\n")
-    exit()
-
 # Create columns of rich table
 table = Table(title="Fanfics")
-
 table.add_column("Index", justify="left", style="#bcbcbc", no_wrap=True)
 table.add_column("Title", style="magenta")
 table.add_column("Chapter", style="green")
 table.add_column("Last updated", justify="left", style="cyan", no_wrap=True)
 
 # Connect to database
-connection = sqlite3.connect(DATABASE_FILE_PATH)
+connection = sqlite3.connect(constants.DATABASE_FILE_PATH)
 cursor = connection.cursor()
 
 # Load table
@@ -183,8 +110,8 @@ def scrape_urls():
                 add_row(item_index, item[URL_POS], web_tags["title"], f"""{web_tags["chapters"]} (+{web_chapter - local_chapter})""", web_tags["last updated"], updated_style)
             else:
                 # Turn upload date of fic into correct format 
-                then = datetime.strptime(web_tags["last updated"], DATE_FORMAT)
-                if HIGHLIGHT_STALE_FICS and (NOW - then).days > STALE_THRESHOLD:
+                then = datetime.strptime(web_tags["last updated"], constants.DATE_FORMAT)
+                if constants.HIGHLIGHT_STALE_FICS and (constants.NOW - then).days > constants.STALE_THRESHOLD:
                     add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"], stale_style)
                 else:
                     add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"])
@@ -202,9 +129,9 @@ def scrape_urls():
 
 
 def add_url_multiple():
-    message = click.edit(MARKER + '\n')
+    message = click.edit(constants.MARKER + '\n')
     if message is not None:
-        message_lines = message.split(MARKER, 1)[1].rstrip('\n').lstrip('\n')
+        message_lines = message.split(constants.MARKER, 1)[1].rstrip('\n').lstrip('\n')
         urls_to_parse = message_lines.split('\n')
 
         for count, item in enumerate(urls_to_parse):
@@ -276,8 +203,8 @@ def construct_rich_table():
             add_row(item_index, item[URL_POS], "FIC DATA NOT YET SCRAPED", item[CHAPTER_POS], item[LAST_UPDATED_POS])
         else:
             # Turn upload date of fic into correct format 
-            then = datetime.strptime(item[LAST_UPDATED_POS], DATE_FORMAT)
-            if HIGHLIGHT_STALE_FICS and (NOW - then).days > STALE_THRESHOLD:
+            then = datetime.strptime(item[LAST_UPDATED_POS], constants.DATE_FORMAT)
+            if constants.HIGHLIGHT_STALE_FICS and (constants.NOW - then).days > constants.STALE_THRESHOLD:
                 add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS], stale_style)
             else:
                 add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS])
