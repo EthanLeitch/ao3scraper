@@ -1,14 +1,12 @@
 # Ignore MacOS .DS_Store files
 .DS_Store
 
-# Ignore pycharm IDE files
+# Ignore IDE files
 .idea/
+.vscode/
 
-# Ignore venv
-venv/
+# Ignore pycache
+__pycache__/
 
 # Ignore database files
 *.db
-
-# Ignore TODO
-TODO.txt

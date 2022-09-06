@@ -7,7 +7,10 @@ from bs4 import BeautifulSoup
 # Sqlite, yaml handling and validation 
 import yaml
 import sqlite3
-import os.path
+
+from os import path
+import pathlib
+from platformdirs import *
 
 from datetime import datetime
 
@@ -18,6 +21,16 @@ from rich.progress import track
 from rich.style import Style
 
 import click
+
+APP_NAME = "ao3scraper"
+APP_AUTHOR = "EthanLeitch"
+
+DATABASE_PATH = path.join(user_data_dir(APP_NAME, APP_AUTHOR)) + "/"
+CONFIG_PATH = path.join(user_config_dir(APP_NAME, APP_AUTHOR)) + "/"
+
+DATABASE_FILE_PATH = DATABASE_PATH + "fics.db"
+CONFIG_FILE_PATH = CONFIG_PATH + "config.yaml"
+
 
 CONFIG_TEMPLATE = """---
 
@@ -40,19 +53,24 @@ stale_style = Style(color="deep_sky_blue4", bold=True)
 updated_style = Style(color="#ffcc33", bold=True)
 
 # Create config file if config file does not exist
-if not os.path.exists("config.yaml"):
+if not path.exists(CONFIG_FILE_PATH):
     print("No config file found. Creating new config file...")
 
     # Create yaml file if yaml file does not exist
-    yaml_file = open("config.yaml", "w")
-    yaml_file.write(CONFIG_TEMPLATE)
-    yaml_file.close()
+    pathlib.Path(CONFIG_PATH).mkdir(parents=True, exist_ok=True)
+    
+    with open(CONFIG_FILE_PATH, 'w') as file:
+        file.write(CONFIG_TEMPLATE)
+        pass
+    #yaml_file = open(CONFIG_PATH, "w")
+    #yaml_file.write(CONFIG_TEMPLATE)
+    #yaml_file.close()
 
     print("Config file created.")
     print("You can change configuration options in config.yaml")
 else:
     # Fetch all local chapter values of URLS
-    with open("config.yaml", "r") as file:
+    with open(CONFIG_FILE_PATH, "r") as file:
         config_file = yaml.safe_load(file)
     try:
         # Load config preferences into variables
@@ -64,11 +82,15 @@ else:
     file.close()
 
 # Create database file if database does not exist
-if not os.path.exists("fics.db"):
+if not path.exists(DATABASE_FILE_PATH):
     print("No database found. Creating new database...")
 
+    pathlib.Path(DATABASE_PATH).mkdir(parents=True, exist_ok=True)
+
+    print(DATABASE_FILE_PATH)
+
     # Connect to database
-    connection = sqlite3.connect("fics.db")
+    connection = sqlite3.connect(DATABASE_FILE_PATH)
 
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE fics (url TEXT, title TEXT, chapters TEXT, updated TEXT)")
@@ -88,7 +110,7 @@ table.add_column("Chapter", style="green")
 table.add_column("Last updated", justify="left", style="cyan", no_wrap=True)
 
 # Connect to database
-connection = sqlite3.connect("fics.db")
+connection = sqlite3.connect(DATABASE_FILE_PATH)
 cursor = connection.cursor()
 
 # Load table
