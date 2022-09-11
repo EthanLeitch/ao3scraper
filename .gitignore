@@ -5,8 +5,10 @@
 .idea/
 .vscode/
 
-# Ignore pycache
+# Ignore python files
+*.pyc
 __pycache__/
+.venv/
 
 # Ignore database files
 *.db

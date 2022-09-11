@@ -2,28 +2,26 @@
 
 # Web scraping
 import requests
-from requests.exceptions import Timeout
-from bs4 import BeautifulSoup
+from requests.exceptions import Timeout, ConnectionError
+from concurrent.futures import ThreadPoolExecutor
 
 # Formatting
 from rich.console import Console
 from rich.table import Table
-from rich.progress import track
 from rich.style import Style
+from rich.progress import Progress
 
 # Other modules
-import sqlite3
+import AO3
 import click
+from pprint import pprint
+from deepdiff import DeepDiff
+from dictdiffer import diff
 from datetime import datetime
 
 # Custom modules
 import constants
-
-# Setup fic_array item constants
-URL_POS = 0
-TITLE_POS = 1
-CHAPTER_POS = 2
-LAST_UPDATED_POS = 3
+import database
 
 # Setup rich styles
 stale_style = Style(color="deep_sky_blue4", bold=True)
@@ -33,19 +31,13 @@ updated_style = Style(color="#ffcc33", bold=True)
 table = Table(title="Fanfics")
 table.add_column("Index", justify="left", style="#bcbcbc", no_wrap=True)
 table.add_column("Title", style="magenta")
-table.add_column("Chapter", style="green")
+table.add_column("Chapters", style="green")
 table.add_column("Last updated", justify="left", style="cyan", no_wrap=True)
-
-# Connect to database
-connection = sqlite3.connect(constants.DATABASE_FILE_PATH)
-cursor = connection.cursor()
-
-# Load table
-cursor.execute("SELECT * FROM fics")
-fic_table = cursor.fetchall()
-
 console = Console()
 
+# Read database
+fic_ids = database.get_fic_ids()
+local_fics = database.get_all_fics()
 
 # Start click command
 @click.command()
@@ -69,59 +61,67 @@ def main(scrape, add, add_urls, list, delete):
         with click.Context(main, info_name='ao3scraper.py') as ctx:
             click.echo(main.get_help(ctx))
 
-    connection.close()
     exit()
 
 
 def scrape_urls():
+    """
     # Check if AO3 is online / accessible
     print("Checking if AO3 servers are online...")
     try:
         requests.get("https://archiveofourown.org", timeout=10)
     except Timeout:
-        print("Could not connect to AO3 servers. (timed out)")
+        print("Could not reach AO3 servers. (Timeout)")
+        exit()
+    except ConnectionError:
+        print("Could not reach AO3 servers. (ConnectionError)")
         exit()
     else:
         print("Contacted servers successfully.")
+    """
+    
+    external_fics = []
 
-    # Handle each url
-    for count, item in enumerate(track(fic_table, description="Fetching data from AO3...")):
-        # Fetch all external chapter values of URLS
-        web_tags = get_tags(item[URL_POS])
+    # The load_fic function that each thread performs
+    def load_fic(id):
+        try:
+            # Fetch fic's metadata
+            fic = AO3.Work(id).metadata
+            external_fics.append(fic)
 
-        # Get item index
-        item_index = count + 1
+        except Exception as e:
+            # print(f"{e} {id}")
+            external_fics.append({'Exception': e, 'id': id})
+            progress.update(progress_bar, advance=1)
+        
+        progress.update(progress_bar, advance=1)
+    
+    # Track and create thread pool
+    with Progress() as progress:
+        progress_bar = progress.add_task("Fetching data from AO3...", total=len(fic_ids))
 
-        # 4xx and 5xx error checking - checks whether get_items returns an int. If so, it's a 5xx or 4xx error.
-        if isinstance(web_tags, int):
-            add_row(item_index, item[URL_POS], f"{web_tags} ERROR WHEN FETCHING INFORMATION",
-                    item[CHAPTER_POS], item[LAST_UPDATED_POS], "red")
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            executor.map(load_fic, fic_ids)
+
+    # Handle adding of each fic
+    for count, fic in enumerate(external_fics):
+        add_row(fic, count)
+
+        if 'Exception' in fic:
             continue
 
-        # Check if url has local tags: title, chapters, last updated
-        if None in item:
-            add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"])
-        else:
-            # Compare each web chapter value to each local chapter value
-            web_chapter = int(web_tags["chapters"].split("/")[0])
-            local_chapter = int(item[CHAPTER_POS].split("/")[0])
+        """
+        difference = DeepDiff(local_fics[count], external_fics[count])
+        pprint(difference)
+        print("=========================================================")
+        """
 
-            if web_chapter > local_chapter:
-                add_row(item_index, item[URL_POS], web_tags["title"], f"""{web_tags["chapters"]} (+{web_chapter - local_chapter})""", web_tags["last updated"], updated_style)
-            else:
-                # Turn upload date of fic into correct format 
-                then = datetime.strptime(web_tags["last updated"], constants.DATE_FORMAT)
-                if constants.HIGHLIGHT_STALE_FICS and (constants.NOW - then).days > constants.STALE_THRESHOLD:
-                    add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"], stale_style)
-                else:
-                    add_row(item_index, item[URL_POS], web_tags["title"], web_tags["chapters"], web_tags["last updated"])
+        # Convert every datatype to STRING so it can be stored in the database.
+        for keys in fic:
+            fic[keys] = str(fic[keys])
 
-        # Write item information to database
-        target_entry = fic_table[count]
-
-        # Must be triple-quotations in case fic title has quotation marks which will mess up the SQL statement
-        cursor.execute(f"""UPDATE fics SET title = "{web_tags["title"]}", chapters = "{web_tags["chapters"]}", updated = "{web_tags["last updated"]}" WHERE url = "{target_entry[URL_POS]}";""")
-        connection.commit()
+        # Update database
+        database.update_fic(fic, fic['id'])
 
     # Print rich table
     print()
@@ -130,27 +130,33 @@ def scrape_urls():
 
 def add_url_multiple():
     message = click.edit(constants.MARKER + '\n')
+
     if message is not None:
         message_lines = message.split(constants.MARKER, 1)[1].rstrip('\n').lstrip('\n')
         urls_to_parse = message_lines.split('\n')
 
         for count, item in enumerate(urls_to_parse):
-            if str(fic_table).find(item) != -1:
+            entry_id = AO3.utils.workid_from_url(item)
+            if entry_id == None:
+                print(f"{item} is not a valid url.")
+            elif str(entry_id) in fic_ids:
                 print(item, "already in database.")
-                continue
-            cursor.execute(f"INSERT INTO fics (url) VALUES ('{str(item)}');")
-            connection.commit()
-            print("Added " + urls_to_parse[count])
+            else:
+                database.add_fic(entry_id)
+                print("Added " + urls_to_parse[count])
 
     construct_rich_table()
 
 
 def add_url_single(entry):
-    if str(fic_table).find(entry) != -1:
-        print(entry, "already in database.")
+    entry_id = AO3.utils.workid_from_url(entry)
+
+    if entry_id == None:
+        print(f"{entry} is not a valid url.")
+    elif str(entry_id) in fic_ids:
+        print(f"{entry_id} already in database.")
     else:
-        cursor.execute(f"INSERT INTO fics (url) VALUES ('{entry}');")
-        connection.commit()
+        database.add_fic(entry_id)
         print("Added", entry)
 
     construct_rich_table()
@@ -158,64 +164,57 @@ def add_url_single(entry):
 
 def delete_entry(entry):
     try:
-        # here be black magic and code arcane
-        target_entry = fic_table[(entry - 1)]
-        cursor.execute(f"DELETE FROM fics WHERE url = '{target_entry[URL_POS]}';")
-        # cursor.execute("DELETE FROM fics WHERE rowid = " + entry + ";")
+        # Decrease entry by one because Python arrays start at 0.
+        target_entry = local_fics[(entry - 1)]
+        database.delete_fic(target_entry['id'])
     except IndexError:
         print("Number out of index range.")
         exit()
-    connection.commit()
     print("Deleted entry number", str(entry))
 
     construct_rich_table()
 
 
-# Function to fetch all online tags for one URL
-def get_tags(url):
-    page = requests.get(url)
+def construct_rich_table(read_again=True):
+    if read_again is True:
+        # Read database again
+        local_fics = database.get_all_fics()
 
-    # 4xx and 5xx Error Detection
-    if not page.ok:
-        return page.status_code
-
-    soup = BeautifulSoup(page.content, "html.parser")
-
-    # Return tags in order: title, chapters, last updated.
-    return {
-        "title": soup.find_all(class_="title heading")[0].string.strip(),
-        "chapters": soup.find_all(class_="chapters")[1].string,
-        "last updated": soup.find_all(class_="status")[1].string
-    }
-
-
-def construct_rich_table():
-    # Refresh table entries
-    cursor.execute("SELECT * FROM fics")
-    fic_table = cursor.fetchall()
-
-    for count, item in enumerate(fic_table):
-        # Get item index
-        item_index = str(count + 1)
-
-        # Check if title field is empty
-        if item[TITLE_POS] is None:
-            add_row(item_index, item[URL_POS], "FIC DATA NOT YET SCRAPED", item[CHAPTER_POS], item[LAST_UPDATED_POS])
-        else:
-            # Turn upload date of fic into correct format 
-            then = datetime.strptime(item[LAST_UPDATED_POS], constants.DATE_FORMAT)
-            if constants.HIGHLIGHT_STALE_FICS and (constants.NOW - then).days > constants.STALE_THRESHOLD:
-                add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS], stale_style)
-            else:
-                add_row(item_index, item[URL_POS], item[TITLE_POS], item[CHAPTER_POS], item[LAST_UPDATED_POS])
+    for count, fic in enumerate(local_fics):
+        add_row(fic, count)
 
     # Print rich table
     print()
     console.print(table)
 
 
-def add_row(index, url, title, chapter, last_updated, styling=""):
-    table.add_row(f"{index}.", f"[link={url}]{title}[/link]", chapter, last_updated, style=styling)
+def add_row(fic, count, styling=""):
+    # Offset index by 1 because Python arrays start at 0.
+    index = str(count + 1)
+
+    # Create link for fic
+    fic_link = f"https://archiveofourown.org/works/{fic['id']}" 
+
+    # If key 'Exception' in fic, display error information.
+    if 'Exception' in fic:
+        table.add_row(f"{index}.", f"[link={fic_link}]ERROR: {fic['Exception']}[/link]", style="red")
+        return
+
+    # Check if title field is empty. If it is, we assume that the fic has not yet been scraped.
+    if fic['title'] is None:
+        table.add_row(f"{index}.", f"[link={fic_link}]FIC DATA NOT YET SCRAPED[/link]", style=styling)
+        return
+
+    if fic['expected_chapters'] is None:
+        fic['expected_chapters'] = '?'
+
+    # Turn upload date of fic into correct format 
+    then = datetime.strptime(fic['date_updated'], constants.DATE_FORMAT)
+
+    if constants.HIGHLIGHT_STALE_FICS and (constants.NOW - then).days > constants.STALE_THRESHOLD:
+        table.add_row(f"{index}.", f"[link={fic_link}]{fic['title']}[/link]", f"{fic['nchapters']}/{fic['expected_chapters']}", str(fic['date_updated']), style=stale_style)
+    else:
+        table.add_row(f"{index}.", f"[link={fic_link}]{fic['title']}[/link]", f"{fic['nchapters']}/{fic['expected_chapters']}", str(fic['date_updated']), style=styling)
 
 
 if __name__ == "__main__":

@@ -31,7 +31,10 @@ def main():
         connection = sqlite3.connect(constants.DATABASE_FILE_PATH)
 
         cursor = connection.cursor()
-        cursor.execute("CREATE TABLE fics (url TEXT, title TEXT, chapters TEXT, updated TEXT)")
+
+        cursor.execute("CREATE TABLE fics (id INTEGER)")
+        for column in constants.TABLE_COLUMNS:
+            cursor.execute(f"ALTER TABLE fics ADD {column} TEXT")
 
         connection.commit()
         connection.close()
