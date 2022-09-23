@@ -1,7 +1,6 @@
 # This module contains important constants used in ao3scraper, and is imported by most files.
 
 from os import path
-from tkinter.tix import COLUMN
 from platformdirs import user_data_dir, user_config_dir
 from datetime import datetime
 from configparser import ConfigParser
@@ -27,6 +26,7 @@ stale_threshold = 60
 
 """
 Currently this list is only avaliable by fetching an instance of a Work's metadata (AO3.Work.metadata).
+This is done in construct_list.py
 'id' has been excluded from this list to prevent conflicts with the SQLAlchemy primary_key. 
 """
 TABLE_COLUMNS = ['date_edited', 'date_published', 'date_updated', 'bookmarks', 'categories', 'nchapters', 'characters', 'complete', 'comments', 'expected_chapters', 'fandoms', 'hits', 'kudos', 'language', 'rating', 'relationships', 'restricted', 'status', 'summary', 'tags', 'title', 'warnings', 'words', 'collections', 'authors', 'series', 'chapter_titles']

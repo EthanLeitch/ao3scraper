@@ -37,8 +37,8 @@ class Fanfic(Base):
         return self.nchapters + "/" + self.expected_chapters
 
     @hybrid_property
-    def latest_chapter_name(self):
-        return self.chapter_titles[self.nchapters]
+    def latest_chapter(self):
+        return self.chapter_titles[-1]
 
 # Add each item in TABLE_COLUMNS to the database as a db.Column(String) object.
 for column in constants.TABLE_COLUMNS:
@@ -72,7 +72,7 @@ def update_fic(fic, fic_id):
 
     with Session() as session:
         stmt = update(Fanfic).where(Fanfic.id == int(fic_id)).values(fic)
-        result = session.execute(stmt)
+        session.execute(stmt)
         session.commit()
 
 

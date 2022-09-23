@@ -14,9 +14,6 @@ from rich.progress import Progress
 # Other modules
 import AO3
 import click
-from pprint import pprint
-from deepdiff import DeepDiff
-from dictdiffer import diff
 from datetime import datetime
 
 # Custom modules
@@ -65,7 +62,6 @@ def main(scrape, add, add_urls, list, delete):
 
 
 def scrape_urls():
-    """
     # Check if AO3 is online / accessible
     print("Checking if AO3 servers are online...")
     try:
@@ -78,16 +74,20 @@ def scrape_urls():
         exit()
     else:
         print("Contacted servers successfully.")
-    """
     
-    external_fics = []
+    # Create array of None that will be replaced later depending on the thread's index.
+    external_fics = [None for fic in fic_ids]
 
     # The load_fic function that each thread performs
     def load_fic(id):
         try:
             # Fetch fic's metadata
             fic = AO3.Work(id).metadata
-            external_fics.append(fic)
+            
+            # Place each fic in correct array position. NOTE: This may not be particularly efficient as the entire list is enumerated by each thread.
+            for count, item in enumerate(fic_ids):
+                if fic["id"] == item:
+                    external_fics[count] = fic
 
         except Exception as e:
             # print(f"{e} {id}")
@@ -109,16 +109,15 @@ def scrape_urls():
 
         if 'Exception' in fic:
             continue
-
-        """
-        difference = DeepDiff(local_fics[count], external_fics[count])
-        pprint(difference)
-        print("=========================================================")
-        """
-
-        # Convert every datatype to STRING so it can be stored in the database.
-        for keys in fic:
-            fic[keys] = str(fic[keys])
+        
+        # Convert each value into string so it can be stored in the database.
+        for value in fic:
+            # If type of entry is list, store it as comma-seperated string (e.g. "foo, bar").
+            if type(fic[value]) is list:
+                fic[value] = ", ".join(fic[value])
+            else:
+                # Else, convert datatype to string.
+                fic[value] = str(fic[value])
 
         # Update database
         database.update_fic(fic, fic['id'])
@@ -192,7 +191,7 @@ def add_row(fic, count, styling=""):
     # Offset index by 1 because Python arrays start at 0.
     index = str(count + 1)
 
-    # Create link for fic
+    # Create AO3 link for fic
     fic_link = f"https://archiveofourown.org/works/{fic['id']}" 
 
     # If key 'Exception' in fic, display error information.
@@ -205,16 +204,29 @@ def add_row(fic, count, styling=""):
         table.add_row(f"{index}.", f"[link={fic_link}]FIC DATA NOT YET SCRAPED[/link]", style=styling)
         return
 
+    # Converting expected_chapters from None to '?' makes the "Chapters" column look nicer.
     if fic['expected_chapters'] is None:
         fic['expected_chapters'] = '?'
 
     # Turn upload date of fic into correct format 
     then = datetime.strptime(fic['date_updated'], constants.DATE_FORMAT)
 
+    # Strip leading and trailing whitespace from fic summaries.
+    fic['summary'] = fic['summary'].strip()
+
+    # Shorten date string from YYYY-MM-DD XX:XX:XX to YYYY-MM-DD.
+    shortened_date_updated = fic['date_updated'][:-9]
+
+    # Get chapters as nchapters/expected_chapters
+    chapters = f"{fic['nchapters']}/{fic['expected_chapters']}"
+
+    # Get latest chapter
+    latest_chapter = fic['chapter_titles'][-1]
+
     if constants.HIGHLIGHT_STALE_FICS and (constants.NOW - then).days > constants.STALE_THRESHOLD:
-        table.add_row(f"{index}.", f"[link={fic_link}]{fic['title']}[/link]", f"{fic['nchapters']}/{fic['expected_chapters']}", str(fic['date_updated']), style=stale_style)
+        table.add_row(f"{index}.", f"[link={fic_link}]{fic['title']}[/link]", chapters, shortened_date_updated, style=stale_style)
     else:
-        table.add_row(f"{index}.", f"[link={fic_link}]{fic['title']}[/link]", f"{fic['nchapters']}/{fic['expected_chapters']}", str(fic['date_updated']), style=styling)
+        table.add_row(f"{index}.", f"[link={fic_link}]{fic['title']}[/link]", chapters, shortened_date_updated, style=styling)
 
 
 if __name__ == "__main__":
