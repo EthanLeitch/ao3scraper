@@ -8,28 +8,27 @@ from concurrent.futures import ThreadPoolExecutor
 # Formatting
 from rich.console import Console
 from rich.table import Table
-from rich.style import Style
 from rich.progress import Progress
 
 # Other modules
 import AO3
 import click
 from datetime import datetime
+import copy
 
 # Custom modules
 import constants
 import database
 
-# Setup rich styles
-stale_style = Style(color="deep_sky_blue4", bold=True)
-updated_style = Style(color="#ffcc33", bold=True)
-
 # Create columns of rich table
 table = Table(title="Fanfics")
-table.add_column("Index", justify="left", style="#bcbcbc", no_wrap=True)
-table.add_column("Title", style="magenta")
-table.add_column("Chapters", style="green")
-table.add_column("Last updated", justify="left", style="cyan", no_wrap=True)
+table.add_column("Index")
+
+args = []
+for i in constants.TABLE_TEMPLATE:
+    table.add_column(i["name"], style=i["styles"])
+    args.append(i["column"])
+
 console = Console()
 
 # Read database
@@ -43,7 +42,8 @@ local_fics = database.get_all_fics()
 @click.option('--add', '-a', help='Adds a single url to the database.')
 @click.option('--add-urls', is_flag=True, help='Opens a text file to add multiple urls to the database.')
 @click.option('--delete', '-d', help='Deletes an entry from the database.', type=int)
-def main(scrape, add, add_urls, list, delete):
+@click.option('--version', '-v', is_flag=True, help='Display version of ao3scraper and other info.')
+def main(scrape, add, add_urls, list, delete, version):
     if scrape:
         scrape_urls()
     elif list:
@@ -54,11 +54,16 @@ def main(scrape, add, add_urls, list, delete):
         add_url_multiple()
     elif delete:
         delete_entry(delete)
+    elif version:
+        print(
+            f"Version: {constants.APP_VERSION}\n"
+            f"Database location: {constants.DATABASE_PATH}\n"
+            f"Config location: {constants.CONFIG_PATH}\n"
+        )
+        console.print("Made with :heart: by [link=https://github.com/EthanLeitch]Ethan Leitch[/link].")
     else:
         with click.Context(main, info_name='ao3scraper.py') as ctx:
             click.echo(main.get_help(ctx))
-
-    exit()
 
 
 def scrape_urls():
@@ -105,11 +110,21 @@ def scrape_urls():
 
     # Handle adding of each fic
     for count, fic in enumerate(external_fics):
-        add_row(fic, count)
+        for value in fic:
+            # If type of entry is list, store it as comma-seperated string (e.g. "foo, bar").
+            if type(fic[value]) is list:
+                fic[value] = ", ".join(fic[value])
+        
+        if type(local_fics[count]['nchapters']) is type(None):
+            add_row(fic, count)
+        elif int(fic['nchapters']) > int(local_fics[count]['nchapters']):
+            add_row(fic, count, styling=constants.UPDATED_STYLES)
+        else:
+            add_row(fic, count)
 
         if 'Exception' in fic:
             continue
-        
+
         # Convert each value into string so it can be stored in the database.
         for value in fic:
             # If type of entry is list, store it as comma-seperated string (e.g. "foo, bar").
@@ -152,7 +167,7 @@ def add_url_single(entry):
 
     if entry_id == None:
         print(f"{entry} is not a valid url.")
-    elif str(entry_id) in fic_ids:
+    elif str(entry_id) in str(fic_ids):
         print(f"{entry_id} already in database.")
     else:
         database.add_fic(entry_id)
@@ -188,6 +203,9 @@ def construct_rich_table(read_again=True):
 
 
 def add_row(fic, count, styling=""):
+    # Copy the fic object so that changes made here are local, and not written to the database.
+    fic = copy.copy(fic)
+
     # Offset index by 1 because Python arrays start at 0.
     index = str(count + 1)
 
@@ -205,7 +223,7 @@ def add_row(fic, count, styling=""):
         return
 
     # Converting expected_chapters from None to '?' makes the "Chapters" column look nicer.
-    if fic['expected_chapters'] is None:
+    if fic['expected_chapters'] is None or fic['expected_chapters'] == "None":
         fic['expected_chapters'] = '?'
 
     # Turn upload date of fic into correct format 
@@ -213,20 +231,29 @@ def add_row(fic, count, styling=""):
 
     # Strip leading and trailing whitespace from fic summaries.
     fic['summary'] = fic['summary'].strip()
-
+    
     # Shorten date string from YYYY-MM-DD XX:XX:XX to YYYY-MM-DD.
-    shortened_date_updated = fic['date_updated'][:-9]
+    fic['$date_updated'] = fic['date_updated'][:-9]
 
     # Get chapters as nchapters/expected_chapters
-    chapters = f"{fic['nchapters']}/{fic['expected_chapters']}"
+    fic['$chapters'] = f"{fic['nchapters']}/{fic['expected_chapters']}"
 
     # Get latest chapter
-    latest_chapter = fic['chapter_titles'][-1]
+    fic['$latest_chapter'] = fic['chapter_titles'][-1]
 
+    # new_args = [fic[i] for i in args]
+    new_args = []
+    for count, zipped in enumerate(zip(args, constants.TABLE_TEMPLATE)):
+        if constants.TABLE_TEMPLATE[count]['column'] == 'title':
+            new_args.append(f"[link={fic_link}]{fic['title']}[/link]")
+        else:
+            new_args.append(fic[constants.TABLE_TEMPLATE[count]['column']])
+    new_args.insert(0, f"{index}.")
+    
     if constants.HIGHLIGHT_STALE_FICS and (constants.NOW - then).days > constants.STALE_THRESHOLD:
-        table.add_row(f"{index}.", f"[link={fic_link}]{fic['title']}[/link]", chapters, shortened_date_updated, style=stale_style)
+        table.add_row(*new_args, style=constants.STALE_STYLES)
     else:
-        table.add_row(f"{index}.", f"[link={fic_link}]{fic['title']}[/link]", chapters, shortened_date_updated, style=styling)
+        table.add_row(*new_args, style=styling)
 
 
 if __name__ == "__main__":
