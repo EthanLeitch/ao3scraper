@@ -27,18 +27,9 @@ Session = sessionmaker(engine)
 
 # Create fanfic class
 class Fanfic(Base):
-
     __tablename__ = "fics"
-
+    
     id = db.Column(Integer, primary_key=True, unique=True)
-
-    @hybrid_property
-    def pretty_chapters(self):
-        return self.nchapters + "/" + self.expected_chapters
-
-    @hybrid_property
-    def latest_chapter(self):
-        return self.chapter_titles[-1]
 
 # Add each item in TABLE_COLUMNS to the database as a db.Column(String) object.
 for column in constants.TABLE_COLUMNS:

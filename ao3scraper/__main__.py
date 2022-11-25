@@ -21,7 +21,7 @@ import constants
 import database
 
 # Create columns of rich table
-table = Table(title="Fanfics")
+table = Table(title="Fanfics", show_lines=True)
 table.add_column("Index")
 
 args = []
@@ -114,6 +114,9 @@ def scrape_urls():
             # If type of entry is list, store it as comma-seperated string (e.g. "foo, bar").
             if type(fic[value]) is list:
                 fic[value] = ", ".join(fic[value])
+            
+        # Strip leading and trailing whitespace from fic summaries.
+        fic['summary'] = fic['summary'].strip()
         
         if type(local_fics[count]['nchapters']) is type(None):
             add_row(fic, count)
@@ -125,14 +128,10 @@ def scrape_urls():
         if 'Exception' in fic:
             continue
 
-        # Convert each value into string so it can be stored in the database.
+        # Convert every value into string so it can be stored in the database.
         for value in fic:
-            # If type of entry is list, store it as comma-seperated string (e.g. "foo, bar").
-            if type(fic[value]) is list:
-                fic[value] = ", ".join(fic[value])
-            else:
-                # Else, convert datatype to string.
-                fic[value] = str(fic[value])
+            fic[value] = str(fic[value])
+        #fic = [str(fic[value]) for fic[value] in fic]
 
         # Update database
         database.update_fic(fic, fic['id'])
@@ -225,23 +224,31 @@ def add_row(fic, count, styling=""):
     # Converting expected_chapters from None to '?' makes the "Chapters" column look nicer.
     if fic['expected_chapters'] is None or fic['expected_chapters'] == "None":
         fic['expected_chapters'] = '?'
-
+    
     # Turn upload date of fic into correct format 
     then = datetime.strptime(fic['date_updated'], constants.DATE_FORMAT)
 
-    # Strip leading and trailing whitespace from fic summaries.
-    fic['summary'] = fic['summary'].strip()
-    
-    # Shorten date string from YYYY-MM-DD XX:XX:XX to YYYY-MM-DD.
-    fic['$date_updated'] = fic['date_updated'][:-9]
+    # Shorten date strings from YYYY-MM-DD XX:XX:XX to YYYY-MM-DD.
+    if constants.SHORTEN_DATES:
+        fic['date_published'] = fic['date_published'][:-9]
+        fic['date_edited'] = fic['date_edited'][:-9]
+        fic['date_updated'] = fic['date_updated'][:-9]
 
-    # Get chapters as nchapters/expected_chapters
-    fic['$chapters'] = f"{fic['nchapters']}/{fic['expected_chapters']}"
+    # Set $chapters to nchapters/expected_chapters (+difference)
+    if styling == constants.UPDATED_STYLES:
+        difference = int(fic['nchapters']) - int(local_fics[count]['nchapters'])
+        fic['$chapters'] = f"{fic['nchapters']}/{fic['expected_chapters']} (+{difference})"
+    else:
+        fic['$chapters'] = f"{fic['nchapters']}/{fic['expected_chapters']}"
 
-    # Get latest chapter
+    # Get latest chapter title
     fic['$latest_chapter'] = fic['chapter_titles'][-1]
 
-    # new_args = [fic[i] for i in args]
+    # Trim every element to max_row_length
+    for data in fic:
+        if isinstance(fic[data], str):
+            fic[data] = (fic[data][:constants.MAX_ROW_LENGTH].strip() + '...') if len(fic[data]) > constants.MAX_ROW_LENGTH else fic[data]
+
     new_args = []
     for count, zipped in enumerate(zip(args, constants.TABLE_TEMPLATE)):
         if constants.TABLE_TEMPLATE[count]['column'] == 'title':
