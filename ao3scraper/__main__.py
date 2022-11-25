@@ -1,5 +1,9 @@
 # The main program for ao3scraper.
 
+# Core modules
+import AO3
+import click
+
 # Web scraping
 import requests
 from requests.exceptions import Timeout, ConnectionError
@@ -11,10 +15,9 @@ from rich.table import Table
 from rich.progress import Progress
 
 # Other modules
-import AO3
-import click
 from datetime import datetime
 import copy
+import pickle
 
 # Custom modules
 import constants
@@ -38,16 +41,16 @@ local_fics = database.get_all_fics()
 # Start click command
 @click.command()
 @click.option('--scrape', '-s', is_flag=True, help='Launches scraping mode.')
-@click.option('--list', '-l', is_flag=True, help='Lists all entries in the database.')
+@click.option('--list', '-l', is_flag=False, flag_value=constants.CACHE_DEFAULT_FLAG, help='Lists all entries in the database. Optional: Type \'cache\' to view the last scraped table.')
 @click.option('--add', '-a', help='Adds a single url to the database.')
 @click.option('--add-urls', is_flag=True, help='Opens a text file to add multiple urls to the database.')
 @click.option('--delete', '-d', help='Deletes an entry from the database.', type=int)
 @click.option('--version', '-v', is_flag=True, help='Display version of ao3scraper and other info.')
-def main(scrape, add, add_urls, list, delete, version):
+def main(scrape, list, add, add_urls, delete, version):
     if scrape:
         scrape_urls()
     elif list:
-        construct_rich_table()
+        construct_rich_table(list)
     elif add:
         add_url_single(add)
     elif add_urls:
@@ -57,7 +60,7 @@ def main(scrape, add, add_urls, list, delete, version):
     elif version:
         print(
             f"Version: {constants.APP_VERSION}\n"
-            f"Database location: {constants.DATABASE_PATH}\n"
+            f"Data location: {constants.DATA_PATH}\n"
             f"Config location: {constants.CONFIG_PATH}\n"
         )
         console.print("Made with :heart: by [link=https://github.com/EthanLeitch]Ethan Leitch[/link].")
@@ -140,6 +143,10 @@ def scrape_urls():
     print()
     console.print(table)
 
+    table.title = "Fanfics (cached)"
+
+    with open(constants.DATA_PATH + "table.pickle", 'wb') as file:
+        pickle.dump(table, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 def add_url_multiple():
     message = click.edit(constants.MARKER + '\n')
@@ -188,11 +195,18 @@ def delete_entry(entry):
     construct_rich_table()
 
 
-def construct_rich_table(read_again=True):
+def construct_rich_table(cache_preference, read_again=True):
     if read_again is True:
         # Read database again
         local_fics = database.get_all_fics()
-
+    
+    if cache_preference == "cache":
+        with open(constants.DATA_PATH + "table.pickle", 'rb') as file:
+            table_cached = pickle.load(file)
+            print()
+            console.print(table_cached)
+            exit()
+    
     for count, fic in enumerate(local_fics):
         add_row(fic, count)
 

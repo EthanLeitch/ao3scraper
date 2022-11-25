@@ -29,7 +29,7 @@ def main():
     if not path.exists(constants.DATABASE_FILE_PATH):
         print("No database found. Creating new database...")
 
-        pathlib.Path(constants.DATABASE_PATH).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(constants.DATA_PATH).mkdir(parents=True, exist_ok=True)
  
         # Connect to database
         connection = sqlite3.connect(constants.DATABASE_FILE_PATH)

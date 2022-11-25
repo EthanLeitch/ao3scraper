@@ -13,15 +13,16 @@ APP_NAME = "ao3scraper"
 APP_AUTHOR = "EthanLeitch"
 APP_VERSION = metadata.version(APP_NAME)
 
-DATABASE_PATH = path.join(user_data_dir(APP_NAME, APP_AUTHOR)) + "/"
+DATA_PATH = path.join(user_data_dir(APP_NAME, APP_AUTHOR)) + "/"
 CONFIG_PATH = path.join(user_config_dir(APP_NAME, APP_AUTHOR)) + "/"
 
-DATABASE_FILE_PATH = DATABASE_PATH + "fics.db"
+DATABASE_FILE_PATH = DATA_PATH + "fics.db"
 CONFIG_FILE_PATH = CONFIG_PATH + "config.yaml"
 
 CONFIG_TEMPLATE = {
     'max_row_length': 120,
     'shorten_dates': True,
+    'cache_default_flag': 'no-cache',
     'highlight_stale_fics': True,
     'stale_threshold' : 60,
     'stale_styles': 'deep_sky_blue4 bold',
@@ -46,6 +47,7 @@ with open(CONFIG_FILE_PATH, 'r') as file:
 
 MAX_ROW_LENGTH = config_file['max_row_length']
 SHORTEN_DATES = config_file['shorten_dates']
+CACHE_DEFAULT_FLAG = config_file['cache_default_flag']
 HIGHLIGHT_STALE_FICS = config_file['highlight_stale_fics']
 STALE_THRESHOLD = config_file['stale_threshold']
 STALE_STYLES = config_file['stale_styles']
