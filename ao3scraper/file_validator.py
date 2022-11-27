@@ -4,6 +4,7 @@ import sqlite3
 from os import path
 import pathlib
 from yaml import dump, Dumper
+import time
 
 # Import custom modules
 import constants
@@ -33,15 +34,46 @@ def main():
  
         # Connect to database
         connection = sqlite3.connect(constants.DATABASE_FILE_PATH)
-
         cursor = connection.cursor()
 
+        # Create fics table
         cursor.execute("CREATE TABLE fics (id INTEGER)")
         for column in constants.TABLE_COLUMNS:
             cursor.execute(f"ALTER TABLE fics ADD {column} TEXT")
+            
+        # Create metadata table     
+        cursor.execute("CREATE TABLE metadata (version TEXT, columns TEXT, timestamp REAL);")
+        columns = ', '.join(constants.TABLE_COLUMNS)
+        query = f"INSERT INTO metadata VALUES ('{constants.APP_VERSION}', '{columns}', {time.time()});"
+        cursor.execute(query)
 
         connection.commit()
         connection.close()
 
         print("Database created.\n")
-        exit()
+    
+    validate_database()
+
+def validate_database():
+    # A new database has (maybe) been created.
+
+    """
+    priorities:
+    closest to latest version
+    date file was modified
+    """
+    return
+    # Could replace this with case/switch?
+    if path.exists("fics.yaml"):
+        upgrade_database('0.0.1')
+    elif path.exists("fics.db"):
+        upgrade_database('0.0.2')
+    elif constants.APP_VERSION > version:
+        upgrade_database(version)
+
+def upgrade_database(app_version):
+    print("We think you're upgrading from an older version of ao3scraper. Would you like to launch the upgrade wizard? (y/n)")
+    choice = input(" > ").lower()
+
+    if choice == 'y':
+        print(f"We think you're upgrading from {app_version}.")

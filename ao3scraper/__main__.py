@@ -18,6 +18,7 @@ from rich.progress import Progress
 from datetime import datetime
 import copy
 import pickle
+import warnings
 
 # Custom modules
 import constants
@@ -89,9 +90,17 @@ def scrape_urls():
     # The load_fic function that each thread performs
     def load_fic(id):
         try:
+            # Setup custom warning format
+            def custom_formatwarning(msg, *args, **kwargs):
+                if constants.WARNINGS:
+                    return f"(Work: {id}) Warning: {str(msg)}\n"
+                return ""
+
+            warnings.formatwarning = custom_formatwarning
+
             # Fetch fic's metadata
             fic = AO3.Work(id).metadata
-            
+
             # Place each fic in correct array position. NOTE: This may not be particularly efficient as the entire list is enumerated by each thread.
             for count, item in enumerate(fic_ids):
                 if fic["id"] == item:

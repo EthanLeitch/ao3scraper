@@ -23,6 +23,7 @@ CONFIG_TEMPLATE = {
     'max_row_length': 120,
     'shorten_dates': True,
     'cache_default_flag': 'no-cache',
+    'warnings': True,
     'highlight_stale_fics': True,
     'stale_threshold' : 60,
     'stale_styles': 'deep_sky_blue4 bold',
@@ -48,6 +49,7 @@ with open(CONFIG_FILE_PATH, 'r') as file:
 MAX_ROW_LENGTH = config_file['max_row_length']
 SHORTEN_DATES = config_file['shorten_dates']
 CACHE_DEFAULT_FLAG = config_file['cache_default_flag']
+WARNINGS = config_file['warnings']
 HIGHLIGHT_STALE_FICS = config_file['highlight_stale_fics']
 STALE_THRESHOLD = config_file['stale_threshold']
 STALE_STYLES = config_file['stale_styles']
