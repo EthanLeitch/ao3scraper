@@ -42,14 +42,17 @@ local_fics = database.get_all_fics()
 # Start click command
 @click.command()
 @click.option('--scrape', '-s', is_flag=True, help='Launches scraping mode.')
-@click.option('--list', '-l', is_flag=False, flag_value=constants.CACHE_DEFAULT_FLAG, help='Lists all entries in the database. Optional: Type \'cache\' to view the last scraped table.')
+@click.option('--cache', '-c', is_flag=True, help='Prints the last scraped table.')
+@click.option('--list', '-l', is_flag=True, help='Lists all entries in the database.')
 @click.option('--add', '-a', help='Adds a single url to the database.')
 @click.option('--add-urls', is_flag=True, help='Opens a text file to add multiple urls to the database.')
 @click.option('--delete', '-d', help='Deletes an entry from the database.', type=int)
 @click.option('--version', '-v', is_flag=True, help='Display version of ao3scraper and other info.')
-def main(scrape, list, add, add_urls, delete, version):
+def main(scrape, cache, list, add, add_urls, delete, version):
     if scrape:
         scrape_urls()
+    elif cache:
+        print_cached_table()
     elif list:
         construct_rich_table(list)
     elif add:
@@ -204,17 +207,10 @@ def delete_entry(entry):
     construct_rich_table()
 
 
-def construct_rich_table(cache_preference, read_again=True):
+def construct_rich_table(read_again=True):
     if read_again is True:
         # Read database again
         local_fics = database.get_all_fics()
-    
-    if cache_preference == "cache":
-        with open(constants.DATA_PATH + "table.pickle", 'rb') as file:
-            table_cached = pickle.load(file)
-            print()
-            console.print(table_cached)
-            exit()
     
     for count, fic in enumerate(local_fics):
         add_row(fic, count)
@@ -222,6 +218,12 @@ def construct_rich_table(cache_preference, read_again=True):
     # Print rich table
     print()
     console.print(table)
+
+def print_cached_table():
+    with open(constants.DATA_PATH + "table.pickle", 'rb') as file:
+        table_cached = pickle.load(file)
+        print()
+        console.print(table_cached)
 
 
 def add_row(fic, count, styling=""):
@@ -252,10 +254,9 @@ def add_row(fic, count, styling=""):
     then = datetime.strptime(fic['date_updated'], constants.DATE_FORMAT)
 
     # Shorten date strings from YYYY-MM-DD XX:XX:XX to YYYY-MM-DD.
-    if constants.SHORTEN_DATES:
-        fic['date_published'] = fic['date_published'][:-9]
-        fic['date_edited'] = fic['date_edited'][:-9]
-        fic['date_updated'] = fic['date_updated'][:-9]
+    fic['date_published'] = fic['date_published'][:-9]
+    fic['date_edited'] = fic['date_edited'][:-9]
+    fic['date_updated'] = fic['date_updated'][:-9]
 
     # Set $chapters to nchapters/expected_chapters (+difference)
     if styling == constants.UPDATED_STYLES:
@@ -280,7 +281,7 @@ def add_row(fic, count, styling=""):
             new_args.append(fic[constants.TABLE_TEMPLATE[count]['column']])
     new_args.insert(0, f"{index}.")
     
-    if constants.HIGHLIGHT_STALE_FICS and (constants.NOW - then).days > constants.STALE_THRESHOLD:
+    if (constants.NOW - then).days > constants.STALE_THRESHOLD:
         table.add_row(*new_args, style=constants.STALE_STYLES)
     else:
         table.add_row(*new_args, style=styling)
