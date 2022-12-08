@@ -111,7 +111,13 @@ def scrape_urls():
 
         except Exception as e:
             # print(f"{e} {id}")
-            external_fics.append({'Exception': e, 'id': id})
+            for count, local_id in enumerate(fic_ids):
+                if id == local_id:
+                    if type(e) is AttributeError:
+                        e = "The work might be restricted (AttributeError)"
+
+                    external_fics[count] = ({'Exception': str(e), 'id': id})
+            
             progress.update(progress_bar, advance=1)
         
         progress.update(progress_bar, advance=1)
@@ -125,6 +131,11 @@ def scrape_urls():
 
     # Handle adding of each fic
     for count, fic in enumerate(external_fics):
+        
+        if 'Exception' in fic:
+            add_row(fic, count)
+            continue
+
         for value in fic:
             # If type of entry is list, store it as comma-seperated string (e.g. "foo, bar").
             if type(fic[value]) is list:
@@ -139,9 +150,6 @@ def scrape_urls():
             add_row(fic, count, styling=constants.UPDATED_STYLES)
         else:
             add_row(fic, count)
-
-        if 'Exception' in fic:
-            continue
 
         # Convert every value into string so it can be stored in the database.
         for value in fic:
