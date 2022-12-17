@@ -4,7 +4,12 @@ import sqlite3
 from os import path
 import pathlib
 from yaml import dump, Dumper
-import time
+
+from sqlite3 import OperationalError
+from alembic.config import Config
+from alembic import command
+import uuid
+from shutil import copy
 
 # Import custom modules
 import constants
@@ -41,10 +46,9 @@ def main():
         for column in constants.TABLE_COLUMNS:
             cursor.execute(f"ALTER TABLE fics ADD {column} TEXT")
             
-        # Create metadata table     
-        cursor.execute("CREATE TABLE metadata (version TEXT, columns TEXT, timestamp REAL);")
-        columns = ', '.join(constants.TABLE_COLUMNS)
-        query = f"INSERT INTO metadata VALUES ('{constants.APP_VERSION}', '{columns}', {time.time()});"
+        # Create metadata table
+        cursor.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL, CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num));")
+        query = f"INSERT INTO alembic_version VALUES ('{constants.ALEMBIC_VERSION}');"
         cursor.execute(query)
 
         connection.commit()
@@ -55,25 +59,42 @@ def main():
     validate_database()
 
 def validate_database():
-    # A new database has (maybe) been created.
+    # A new database has NOT been created, so we must validate the existing one.
+    # Connect to database
+    connection = sqlite3.connect(constants.DATABASE_FILE_PATH)
+    cursor = connection.cursor()
 
-    """
-    priorities:
-    closest to latest version
-    date file was modified
-    """
-    return
-    # Could replace this with case/switch?
-    if path.exists("fics.yaml"):
-        upgrade_database('0.0.1')
-    elif path.exists("fics.db"):
-        upgrade_database('0.0.2')
-    elif constants.APP_VERSION > version:
-        upgrade_database(version)
+    # Retrive version_num
+    try:
+        cursor.execute("SELECT version_num FROM alembic_version;")
+        version_num = [item[0] for item in cursor.fetchall()]
+        version_num = version_num[0]
+    except OperationalError:
+        print(f"The local database version could not be verified. It may be a legacy version.")
+        upgrade_database()
+    except IndexError:
+        print("The local database version entry does not exist. This may be because of a previous database migration that failed.")
+        exit()
 
-def upgrade_database(app_version):
-    print("We think you're upgrading from an older version of ao3scraper. Would you like to launch the upgrade wizard? (y/n)")
+    if version_num != constants.ALEMBIC_VERSION:
+        print(f"ao3scraper is on database revision {constants.ALEMBIC_VERSION}, but the local database is on revision {version_num}.")
+        upgrade_database()
+    
+def upgrade_database():
+    print("Would you like to migrate to the version supported by ao3scraper? (y/n)")
+    
     choice = input(" > ").lower()
-
     if choice == 'y':
-        print(f"We think you're upgrading from {app_version}.")
+        backup_db_name = "fics_backup_" + str(uuid.uuid4().hex) + ".db"
+        backup_db_path = path.join(constants.DATA_PATH, 'backups', backup_db_name)
+
+        pathlib.Path(path.join(constants.DATA_PATH, 'backups')).mkdir(parents=False, exist_ok=True)
+        print(f"Saving backup of current database to {backup_db_path}")
+        copy(constants.DATABASE_FILE_PATH, backup_db_path)
+
+        alembic_cfg = Config("alembic.ini")
+        command.upgrade(alembic_cfg, constants.ALEMBIC_VERSION)
+        quit()
+    else:
+        # Quitting is the safest option, as ao3scraper doesn't do error handling for the database very well.
+        quit()

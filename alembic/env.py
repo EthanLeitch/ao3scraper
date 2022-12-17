@@ -5,9 +5,15 @@ from sqlalchemy import pool
 
 from alembic import context
 
+from os import environ
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# pass interpolation vars to alembic.ini fron env variables
+section = config.config_ini_section
+config.set_section_option(section, "DATABASE_FILE_PATH", str(environ.get("DATABASE_FILE_PATH")))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

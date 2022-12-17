@@ -13,6 +13,8 @@ from concurrent.futures import ThreadPoolExecutor
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress
+from rich.traceback import install
+install()
 
 # Other modules
 from datetime import datetime
@@ -168,6 +170,7 @@ def scrape_urls():
     with open(constants.DATA_PATH + "table.pickle", 'wb') as file:
         pickle.dump(table, file, protocol=pickle.HIGHEST_PROTOCOL)
 
+
 def add_url_multiple():
     message = click.edit(constants.MARKER + '\n')
 
@@ -226,6 +229,7 @@ def construct_rich_table(read_again=True):
     # Print rich table
     print()
     console.print(table)
+
 
 def print_cached_table():
     with open(constants.DATA_PATH + "table.pickle", 'rb') as file:
