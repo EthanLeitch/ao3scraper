@@ -253,8 +253,8 @@ def add_row(fic, count, styling=""):
         table.add_row(f"{index}.", f"[link={fic_link}]ERROR: {fic['Exception']}[/link]", style="red")
         return
 
-    # Check if title field is empty. If it is, we assume that the fic has not yet been scraped.
-    if fic['title'] is None:
+    # Check if title or date_published field is empty. If it is, we assume that the fic has not yet been scraped.
+    if fic['title'] is None or fic['date_published'] is None:
         table.add_row(f"{index}.", f"[link={fic_link}]FIC DATA NOT YET SCRAPED[/link]", style=styling)
         return
 

@@ -3,7 +3,8 @@
 import sqlite3
 from os import path
 import pathlib
-from yaml import dump, Dumper
+#from yaml import dump, Dumper
+from ruamel.yaml import YAML
 
 from sqlite3 import OperationalError
 from alembic.config import Config
@@ -23,9 +24,12 @@ def main():
         
         with open(constants.CONFIG_FILE_PATH, 'w') as file:
             # Convert CONFIG_TEMPLATE to yaml, and disable the alphabetical key sorting done by yaml.dump
-            config_file_dump = dump(constants.CONFIG_TEMPLATE, Dumper=Dumper, sort_keys=False)
+            #config_file_dump = dump(constants.CONFIG_TEMPLATE, Dumper=Dumper, sort_keys=False)
+            yaml = YAML()
+            template = yaml.load(constants.CONFIG_TEMPLATE)
             # Write to file
-            file.write(config_file_dump)
+            yaml.dump(template, file)
+            #file.write(yaml.dump(template))
             pass
 
         print("Config file created.")

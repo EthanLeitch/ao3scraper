@@ -25,14 +25,29 @@ CONFIG_FILE_PATH = CONFIG_PATH + "config.yaml"
 # Set DATABASE_FILE_PATH environment variable for alembic
 environ.setdefault("DATABASE_FILE_PATH", DATABASE_FILE_PATH)
 
-CONFIG_TEMPLATE = {
-    'max_row_length': 120,
-    'warnings': True,
-    'stale_threshold' : 60,
-    'stale_styles': 'deep_sky_blue4 bold',
-    'updated_styles': '#ffcc33 bold',
-    'table_template': [{'column': 'title', 'name': 'Title', 'styles': 'magenta'}, {'column': '$chapters', 'name': 'Chapters', 'styles': 'green'}, {'column': 'date_updated', 'name': 'Last updated', 'styles': 'cyan'}, {'column': 'status', 'name':'Status', 'styles': 'violet'}]
-}
+CONFIG_TEMPLATE = """
+# Formatting of table
+max_row_length: 120
+warnings: false
+stale_threshold: 60
+stale_styles: deep_sky_blue4
+updated_styles: '#ffcc33 bold'
+
+# Column attributes
+table_template:
+- column: title
+  name: Title
+  styles: magenta
+- column: $chapters
+  name: Chapters
+  styles: green
+- column: date_updated
+  name: Last updated
+  styles: cyan
+- column: status
+  name: Status
+  styles: violet
+"""
 
 """
 Currently this list is only avaliable by fetching an instance of a Work's metadata (AO3.Work.metadata).
