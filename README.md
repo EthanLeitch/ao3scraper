@@ -46,3 +46,6 @@ If you accept, a backup of the current `fics.db` will be created in `/backups`, 
 
 ## Contributing
 Contributions are always appreciated. Submit a pull request with your suggested changes!
+
+## Acknowledgements
+ao3scraper would not be possible without the existence of [ao3_api](https://github.com/ArmindoFlores/ao3_api/) and the work of its [contributors](https://github.com/ArmindoFlores/ao3_api/graphs/contributors).
