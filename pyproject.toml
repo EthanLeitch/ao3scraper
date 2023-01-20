@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ao3scraper"
-version = "1.0.1"
+version = "1.0.2"
 readme = "README.md"
 description = "ao3scraper is a python webscraper that scrapes AO3 for fanfiction data, stores it in a database, and highlights entries when they are updated."
 license = "GPL-3.0-or-later"
