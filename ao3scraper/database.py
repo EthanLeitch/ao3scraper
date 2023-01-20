@@ -14,7 +14,7 @@ from sqlalchemy import inspect, select, update, delete, values
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 # Custom modules
-import constants
+import ao3scraper.constants as constants
 
 engine = db.create_engine(f'sqlite:///{constants.DATABASE_FILE_PATH}')
 connection = engine.connect()

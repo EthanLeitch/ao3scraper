@@ -23,8 +23,8 @@ import pickle
 import warnings
 
 # Custom modules
-import constants
-import database
+import ao3scraper.constants as constants
+import ao3scraper.database as database
 
 # Create columns of rich table
 table = Table(title="Fanfics", show_lines=True)

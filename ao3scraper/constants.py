@@ -8,7 +8,7 @@ from importlib import metadata
 from yaml import load, Loader
 
 # Custom modules
-import file_validator
+import ao3scraper.file_validator as file_validator
 
 # Set important constants!
 APP_NAME = "ao3scraper"

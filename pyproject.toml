@@ -1,8 +1,18 @@
 [tool.poetry]
 name = "ao3scraper"
-version = "1.0.0"
-description = ""
+version = "1.0.1"
+readme = "README.md"
+description = "ao3scraper is a python webscraper that scrapes AO3 for fanfiction data, stores it in a database, and highlights entries when they are updated."
+license = "GPL-3.0-or-later"
 authors = ["Ethan <ethanjohnleitch@gmail.com>"]
+repository = "https://github.com/EthanLeitch/ao3scraper"
+packages = [
+    { include = "ao3scraper" },
+    { include = "ao3scraper/**/*.py" },
+]
+
+[tool.poetry.scripts]
+ao3scraper = "ao3scraper.cli:main"
 
 [tool.poetry.dependencies]
 python = "^3.10"

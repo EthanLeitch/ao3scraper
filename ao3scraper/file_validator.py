@@ -13,7 +13,7 @@ import uuid
 from shutil import copy
 
 # Import custom modules
-import constants
+import ao3scraper.constants as constants
 
 def main():
     # Create config file if config file does not exist

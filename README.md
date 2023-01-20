@@ -6,12 +6,20 @@ A python webscraper that scrapes AO3 for fanfiction data, stores it in a databas
 *Table with an updated entry highlighted.*
 
 ## Installation
-Install required packages with:
+You can easily install the latest version from pip:
+
+    pip3 install ao3scraper
+
+### Development Installation
+Create a python virtual environment with `python3 -m venv dev_venv` and activate it.
+Then, install required packages with:
 
     poetry install
 
+This will also install ao3scraper into the virtual environment.
+
 ## Usage
-    Usage: python3 ao3scraper [OPTIONS]
+    Usage: ao3scraper [OPTIONS]
 
     Options:
     -s, --scrape          Launches scraping mode.
