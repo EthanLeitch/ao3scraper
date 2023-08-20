@@ -17,7 +17,7 @@ ao3scraper = "ao3scraper.cli:main"
 [tool.poetry.dependencies]
 python = "^3.10"
 beautifulsoup4 = "4.11.1"
-certifi = "2022.5.18.1"
+certifi = "2023.7.22"
 chardet = "4.0.0"
 click = "8.0.1"
 commonmark = "0.9.1"
