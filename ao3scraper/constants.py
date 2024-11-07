@@ -8,12 +8,12 @@ from importlib import metadata
 from yaml import load, Loader
 
 # Custom modules
-import ao3scraper.file_validator as file_validator
+import file_validator
 
 # Set important constants!
 APP_NAME = "ao3scraper"
 APP_AUTHOR = "EthanLeitch"
-APP_VERSION = metadata.version(APP_NAME)
+APP_VERSION = '1.0.3' #metadata.version(APP_NAME)
 ALEMBIC_VERSION = 'ca2dfefaf0b6'
 
 DATA_PATH = path.join(user_data_dir(APP_NAME, APP_AUTHOR)) + "/"
@@ -52,7 +52,7 @@ table_template:
 """
 Currently this list is only avaliable by fetching an instance of a Work's metadata (AO3.Work.metadata).
 This is done in construct_list.py
-'id' has been excluded from this list to prevent conflicts with the SQLAlchemy primary_key. 
+'id' has been excluded from this list to prevent conflicts with the SQLAlchemy primary_key.
 """
 TABLE_COLUMNS = ['date_edited', 'date_published', 'date_updated', 'bookmarks', 'categories', 'nchapters', 'characters', 'complete', 'comments', 'expected_chapters', 'fandoms', 'hits', 'kudos', 'language', 'rating', 'relationships', 'restricted', 'status', 'summary', 'tags', 'title', 'warnings', 'words', 'collections', 'authors', 'series', 'chapter_titles']
 CUSTOM_COLUMNS = ['$chapters', '$latest_chapter']

@@ -23,8 +23,8 @@ import pickle
 import warnings
 
 # Custom modules
-import ao3scraper.constants as constants
-import ao3scraper.database as database
+import constants
+import database
 
 # Create columns of rich table
 table = Table(title="Fanfics", show_lines=True)
@@ -88,7 +88,7 @@ def scrape_urls():
         exit()
     else:
         print("Contacted servers successfully.")
-    
+
     # Create array of None that will be replaced later depending on the thread's index.
     external_fics = [None for fic in fic_ids]
 
@@ -119,11 +119,11 @@ def scrape_urls():
                         e = "The work might be restricted (AttributeError)"
 
                     external_fics[count] = ({'Exception': str(e), 'id': id})
-            
+
             progress.update(progress_bar, advance=1)
-        
+
         progress.update(progress_bar, advance=1)
-    
+
     # Track and create thread pool
     with Progress() as progress:
         progress_bar = progress.add_task("Fetching data from AO3...", total=len(fic_ids))
@@ -133,7 +133,7 @@ def scrape_urls():
 
     # Handle adding of each fic
     for count, fic in enumerate(external_fics):
-        
+
         if 'Exception' in fic:
             add_row(fic, count)
             continue
@@ -142,10 +142,10 @@ def scrape_urls():
             # If type of entry is list, store it as comma-seperated string (e.g. "foo, bar").
             if type(fic[value]) is list:
                 fic[value] = ", ".join(fic[value])
-            
+
         # Strip leading and trailing whitespace from fic summaries.
         fic['summary'] = fic['summary'].strip()
-        
+
         if type(local_fics[count]['nchapters']) is type(None):
             add_row(fic, count)
         elif int(fic['nchapters']) > int(local_fics[count]['nchapters']):
@@ -222,7 +222,7 @@ def construct_rich_table(read_again=True):
     if read_again is True:
         # Read database again
         local_fics = database.get_all_fics()
-    
+
     for count, fic in enumerate(local_fics):
         add_row(fic, count)
 
@@ -246,7 +246,7 @@ def add_row(fic, count, styling=""):
     index = str(count + 1)
 
     # Create AO3 link for fic
-    fic_link = f"https://archiveofourown.org/works/{fic['id']}" 
+    fic_link = f"https://archiveofourown.org/works/{fic['id']}"
 
     # If key 'Exception' in fic, display error information.
     if 'Exception' in fic:
@@ -261,8 +261,8 @@ def add_row(fic, count, styling=""):
     # Converting expected_chapters from None to '?' makes the "Chapters" column look nicer.
     if fic['expected_chapters'] is None or fic['expected_chapters'] == "None":
         fic['expected_chapters'] = '?'
-    
-    # Turn upload date of fic into correct format 
+
+    # Turn upload date of fic into correct format
     then = datetime.strptime(fic['date_updated'], constants.DATE_FORMAT)
 
     # Shorten date strings from YYYY-MM-DD XX:XX:XX to YYYY-MM-DD.
@@ -292,7 +292,7 @@ def add_row(fic, count, styling=""):
         else:
             new_args.append(fic[constants.TABLE_TEMPLATE[count]['column']])
     new_args.insert(0, f"{index}.")
-    
+
     if (constants.NOW - then).days > constants.STALE_THRESHOLD:
         table.add_row(*new_args, style=constants.STALE_STYLES)
     else:

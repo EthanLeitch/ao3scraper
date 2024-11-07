@@ -10,11 +10,11 @@ from sqlalchemy import Integer, String
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import inspect, select, update, delete, values
 
-# marshmallow 
+# marshmallow
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema
 
 # Custom modules
-import ao3scraper.constants as constants
+import constants
 
 engine = db.create_engine(f'sqlite:///{constants.DATABASE_FILE_PATH}')
 connection = engine.connect()
@@ -28,7 +28,7 @@ Session = sessionmaker(engine)
 # Create fanfic class
 class Fanfic(Base):
     __tablename__ = "fics"
-    
+
     id = db.Column(Integer, primary_key=True, unique=True)
 
 # Add each item in TABLE_COLUMNS to the database as a db.Column(String) object.
@@ -91,7 +91,7 @@ def get_all_fics():
         query = session.query(Fanfic)
         result_dict = [FanficSchema().dump(u) for u in query.all()]
         return result_dict
-    
+
 
 def get_fic_ids():
     """Returns all fic IDs from the database in a list."""
@@ -100,4 +100,3 @@ def get_fic_ids():
         query = session.query(Fanfic.id).all()
         result = [r for r, in query]
         return result
-

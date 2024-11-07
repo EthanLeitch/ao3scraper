@@ -13,7 +13,7 @@ import uuid
 from shutil import copy
 
 # Import custom modules
-import ao3scraper.constants as constants
+import constants
 
 def main():
     # Create config file if config file does not exist
@@ -21,7 +21,7 @@ def main():
         print("No config file found. Creating new config file...")
 
         pathlib.Path(constants.CONFIG_PATH).mkdir(parents=True, exist_ok=True)
-        
+
         with open(constants.CONFIG_FILE_PATH, 'w') as file:
             # Convert CONFIG_TEMPLATE to yaml, and disable the alphabetical key sorting done by yaml.dump
             #config_file_dump = dump(constants.CONFIG_TEMPLATE, Dumper=Dumper, sort_keys=False)
@@ -40,7 +40,7 @@ def main():
         print("No database found. Creating new database...")
 
         pathlib.Path(constants.DATA_PATH).mkdir(parents=True, exist_ok=True)
- 
+
         # Connect to database
         connection = sqlite3.connect(constants.DATABASE_FILE_PATH)
         cursor = connection.cursor()
@@ -49,7 +49,7 @@ def main():
         cursor.execute("CREATE TABLE fics (id INTEGER)")
         for column in constants.TABLE_COLUMNS:
             cursor.execute(f"ALTER TABLE fics ADD {column} TEXT")
-            
+
         # Create metadata table
         cursor.execute("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL, CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num));")
         query = f"INSERT INTO alembic_version VALUES ('{constants.ALEMBIC_VERSION}');"
@@ -59,7 +59,7 @@ def main():
         connection.close()
 
         print("Database created.\n")
-    
+
     validate_database()
 
 def validate_database():
@@ -83,10 +83,10 @@ def validate_database():
     if version_num != constants.ALEMBIC_VERSION:
         print(f"ao3scraper is on database revision {constants.ALEMBIC_VERSION}, but the local database is on revision {version_num}.")
         upgrade_database()
-    
+
 def upgrade_database():
     print("Would you like to migrate to the version supported by ao3scraper? (y/n)")
-    
+
     choice = input(" > ").lower()
     if choice == 'y':
         backup_db_name = "fics_backup_" + str(uuid.uuid4().hex) + ".db"
